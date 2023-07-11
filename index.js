@@ -39,6 +39,13 @@ const User = mongoose.model("User", {
   salt: String,
 });
 
+const Post = mongoose.model("Post", {
+  title: String,
+  category: String,
+  description: String,
+  userId: String,
+});
+
 myApp.use(
   session({
     secret: "conestoga_community",
@@ -51,6 +58,7 @@ myApp.get("/", (req, res) => {
   res.render("login");
 });
 
+// SIGNUP
 myApp.post("/signUp", async (req, res) => {
   try {
     const user = req.body;
@@ -69,6 +77,7 @@ myApp.post("/signUp", async (req, res) => {
   }
 });
 
+// SIGNIN
 myApp.get("/signIn", async (req, res) => {
   try {
     const user = req.body;
@@ -100,6 +109,15 @@ myApp.get("/signIn", async (req, res) => {
 
 myApp.get("/newPost", (req, res) => {
   res.render("newpost");
+});
+
+myApp.post("/createPost", (req, res) => {
+  const post = req.body;
+  try {
+    JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
+  } catch (error) {
+    throw error;
+  }
 });
 
 // Create admin credentials
