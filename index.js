@@ -3,15 +3,22 @@ const path = require("path");
 let myApp = express();
 const session = require("express-session");
 const { check, validationResult } = require("express-validator");
+const {
+  GenerateSalt,
+  GeneratePassword,
+  ValidatePassword,
+  GenerateSignature,
+} = require("./utils");
 
 myApp.set("views", path.join(__dirname, "views"));
 myApp.use(express.static(__dirname + "/public"));
-
+myApp.use(express.json());
 myApp.use(express.urlencoded({ extended: true }));
 
 myApp.set("view engine", "ejs");
 
 const mongoose = require("mongoose");
+const { create } = require("domain");
 
 mongoose.connect("mongodb://0.0.0.0:27017/ConestogaCommunity", {
   useNewUrlParser: true,
@@ -21,6 +28,15 @@ mongoose.connect("mongodb://0.0.0.0:27017/ConestogaCommunity", {
 const Admin = mongoose.model("Admin", {
   username: String,
   password: String,
+});
+
+const User = mongoose.model("User", {
+  firstName: String,
+  lastName: String,
+  email: String,
+  isAlumini: Boolean,
+  password: String,
+  salt: String,
 });
 
 myApp.use(
@@ -33,6 +49,53 @@ myApp.use(
 
 myApp.get("/", (req, res) => {
   res.render("login");
+});
+
+myApp.post("/signUp", async (req, res) => {
+  try {
+    const user = req.body;
+    const userExists = await User.findOne({ email: user.email });
+    if (!userExists) {
+      let salt = await GenerateSalt();
+      let password = await GeneratePassword(user.password, salt);
+      user.password = password;
+      user.salt = salt;
+      const createdUser = await new User(user).save();
+      return res.status(201).json(createdUser);
+    }
+    return res.status(400).json({ message: "User already exists !" });
+  } catch (error) {
+    throw error;
+  }
+});
+
+myApp.get("/signIn", async (req, res) => {
+  try {
+    const user = req.body;
+    const existingUser = await User.findOne({ email: user.email });
+    if (existingUser) {
+      const validPassword = await ValidatePassword(
+        user.password,
+        existingUser.password,
+        existingUser.salt
+      );
+      if (validPassword) {
+        const token = await GenerateSignature({
+          _id: existingUser._id,
+        });
+        const sendUserResponse = {
+          firstName: existingUser.firstName,
+          lastName: existingUser.lastName,
+          email: existingUser.email,
+          isAlumini: existingUser.isAlumini,
+          token,
+        };
+        res.status(200).json(sendUserResponse);
+      } else res.status(400).json({ message: "Wrong password!" });
+    } else res.status(404).json({ message: "User not found!" });
+  } catch (error) {
+    throw error;
+  }
 });
 
 myApp.get("/newPost", (req, res) => {
