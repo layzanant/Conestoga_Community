@@ -111,10 +111,41 @@ myApp.get("/newPost", (req, res) => {
   res.render("newpost");
 });
 
-myApp.post("/createPost", (req, res) => {
+// CREATE A POST
+myApp.post("/createPost", async (req, res) => {
   const post = req.body;
+  var token = req.headers.authorization.split(" ")[1];
+  const tokenObj = JSON.parse(
+    Buffer.from(token.split(".")[1], "base64").toString()
+  );
   try {
-    JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
+    post.userId = tokenObj._id;
+    const createdPost = await new Post(post).save();
+    res.status(200).json(createdPost);
+  } catch (error) {
+    throw error;
+  }
+});
+
+// READ ALL POSTS
+myApp.get("/allPosts", async (req, res) => {
+  try {
+    const allPosts = await Post.find({});
+    res.status(200).json(allPosts);
+  } catch (error) {
+    throw error;
+  }
+});
+
+// READ POST BY USER ID
+myApp.get("/postsByUser", async (req, res) => {
+  try {
+    var token = req.headers.authorization.split(" ")[1];
+    const tokenObj = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString()
+    );
+    const postsByUserId = await Post.find({ userId: tokenObj._id });
+    res.status(200).json(postsByUserId);
   } catch (error) {
     throw error;
   }
@@ -131,5 +162,5 @@ myApp.get("/createAdmin", (req, res) => {
   res.send("Admin account created successfully.");
 });
 
-myApp.listen(8000);
+module.exports = myApp.listen(8000);
 console.log("Listening on localhost:8000");
