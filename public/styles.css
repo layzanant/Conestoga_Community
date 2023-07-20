@@ -92,3 +92,39 @@ footer {
     text-align: center;
     padding: 10px;
 }
+.accomodationFilter {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-decoration:none;
+    float:right;
+  }
+  .container{
+    margin-top: 50px;
+  }
+  /* sub menu*/
+nav ul li ul{
+    width: 250px;
+    position: absolute;/* sub menu in sepearate layer*/
+    z-index: 999; 
+    text-align: left;
+    background-color: grey;
+    color: black;
+}
+/* <a> in sub menu*/
+nav ul li ul li a{
+    color: black;
+    padding: 9px;
+    display: block;/* for amking the hover giving good exp,*/
+}
+
+/* hover over the <a> of sub menu*/
+nav ul li ul li:hover a:hover{
+/* 
+background-color: black; */
+}
+nav ul li ul{
+    display: none;/* hides sub menu by default*/
+}
+nav ul li:hover ul{
+    display: block;/* show the sub menu when a user brings their mouse over the parent <li> */
+}

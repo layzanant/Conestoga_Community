@@ -107,10 +107,50 @@ myApp.get("/signIn", async (req, res) => {
   }
 });
 
+const posts = [
+  { username: 'User1', title: '2023-07-19', description: 'This is the first post!' },
+  { username: 'User2', title: '2023-07-18', description: 'Just posted another update.' },
+  { username: 'User3', title: '2023-07-19', description: 'This is the first post!' },
+  { username: 'User4', title: '2023-07-18', description: 'Just posted another update.' },
+  { username: 'User5', title: '2023-07-19', description: 'This is the first post!' },
+  { username: 'User6', date: '2023-07-18', content: 'Just posted another update.' },
+  { author: 'User7', date: '2023-07-19', content: 'This is the first post!' },
+  { author: 'User8', date: '2023-07-18', content: 'Just posted another update.' },
+  // Add more posts here
+];
 myApp.get("/newPost", (req, res) => {
   res.render("newpost");
 });
+myApp.get("/newGetHelp", (req, res) => {
+  res.render("newGetHelp");
+});
+myApp.get("/updateProfile", (req, res) => {
+  res.render("updateProfile");
+});
+myApp.get("/adminHomePage", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const postsPerPage = 2;
+  const totalPosts = posts.length;
+  const totalPages = Math.ceil(totalPosts / postsPerPage);
+  const startIndex = (page - 1) * postsPerPage;
+  const endIndex = startIndex + postsPerPage;
 
+  const paginatedPosts = posts.slice(startIndex, endIndex);
+
+  res.render('adminHomePage', { posts: paginatedPosts, totalPages, currentPage: page });
+});
+myApp.get("/homePage", (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const postsPerPage = 2;
+  const totalPosts = posts.length;
+  const totalPages = Math.ceil(totalPosts / postsPerPage);
+  const startIndex = (page - 1) * postsPerPage;
+  const endIndex = startIndex + postsPerPage;
+
+  const paginatedPosts = posts.slice(startIndex, endIndex);
+
+  res.render('homePage', { posts: paginatedPosts, totalPages, currentPage: page });
+});
 // CREATE A POST
 myApp.post("/createPost", async (req, res) => {
   const post = req.body;

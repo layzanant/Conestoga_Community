@@ -85,3 +85,7 @@ body {
     padding: 10px;
   }
   
+.accomodationFilter {
+    text-decoration:none;
+    float:right;
+  }
