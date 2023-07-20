@@ -25,16 +25,12 @@ mongoose.connect("mongodb://0.0.0.0:27017/ConestogaCommunity", {
   useUnifiedTopology: true,
 });
 
-const Admin = mongoose.model("Admin", {
-  username: String,
-  password: String,
-});
-
 const User = mongoose.model("User", {
   firstName: String,
   lastName: String,
   email: String,
   isAlumini: Boolean,
+  isAdmin: Boolean,
   password: String,
   salt: String,
 });
@@ -44,6 +40,21 @@ const Post = mongoose.model("Post", {
   category: String,
   description: String,
   userId: String,
+});
+
+const Comment = mongoose.model("Comment", {
+  comment: String,
+  postId: String,
+  userId: String,
+});
+
+const HelpRequest = mongoose.model("HelpRequest", {
+  title: String,
+  category: String,
+  description: String,
+  userId: String,
+  isResolved: Boolean,
+  resolutionComment: String,
 });
 
 myApp.use(
@@ -68,6 +79,7 @@ myApp.post("/signUp", async (req, res) => {
       let password = await GeneratePassword(user.password, salt);
       user.password = password;
       user.salt = salt;
+      user.isAdmin = false;
       const createdUser = await new User(user).save();
       return res.status(201).json(createdUser);
     }
@@ -151,15 +163,89 @@ myApp.get("/postsByUser", async (req, res) => {
   }
 });
 
-// Create admin credentials
-myApp.get("/createAdmin", (req, res) => {
-  var credentials = {
-    username: "conestoga_admin",
-    password: "password",
-  };
-  let admin = new Admin(credentials);
-  admin.save();
-  res.send("Admin account created successfully.");
+// DELETE POST
+myApp.delete("/deletePost", async (req, res) => {
+  try {
+    var postId = req.body.postId;
+    var token = req.headers.authorization.split(" ")[1];
+    const tokenObj = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString()
+    );
+    await Post.deleteOne({ _id: postId });
+  } catch (error) {
+    throw error;
+  }
+});
+
+// CREATE COMMENT ON A POST
+myApp.post("/comment", async (req, res) => {
+  const comment = req.body;
+  var token = req.headers.authorization.split(" ")[1];
+  const tokenObj = JSON.parse(
+    Buffer.from(token.split(".")[1], "base64").toString()
+  );
+  try {
+    comment.userId = tokenObj._id;
+    const createdComment = await new Post(post).save();
+    res.status(200).json(createdComment);
+  } catch (error) {
+    throw error;
+  }
+});
+
+// DELETE A COMMENT
+myApp.delete("/deleteComment", async (req, res) => {
+  try {
+    var commentId = req.body.commentId;
+    var token = req.headers.authorization.split(" ")[1];
+    const tokenObj = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString()
+    );
+    await Comment.deleteOne({ _id: commentId });
+  } catch (error) {
+    throw error;
+  }
+});
+
+// RAISE A HELP REQUEST
+myApp.post("/raiseHelpRequest", async (req, res) => {
+  const help = req.body;
+  var token = req.headers.authorization.split(" ")[1];
+  const tokenObj = JSON.parse(
+    Buffer.from(token.split(".")[1], "base64").toString()
+  );
+  try {
+    help.userId = tokenObj._id;
+    help.isResolved = false;
+    const raisedRequest = await new HelpRequest(help).save();
+    res.status(200).json(raisedRequest);
+  } catch (error) {
+    throw error;
+  }
+});
+
+// READ ALL HELP REQUESTS
+myApp.get("/allHelpRequests", async (req, res) => {
+  try {
+    const allHelpRequests = await HelpRequest.find({});
+    res.status(200).json(allHelpRequests);
+  } catch (error) {
+    throw error;
+  }
+});
+
+// RESOLVE A HELP REQUEST
+myApp.post("/resolveRequest", async (req, res) => {
+  try {
+    var req = req.body;
+    const updatedRequest = HelpRequest.update(
+      { _id: req.reqId },
+      { $set: { resolutionComment: req.resolutionComment } }
+    );
+    res.status(200).json(updatedRequest);
+  } catch (error) {
+    throw error;
+  }
 });
 
 module.exports = myApp.listen(8000);
