@@ -16,6 +16,7 @@ afterAll(async () => {
   await app.close();
 });
 
+// test get all posts API
 describe("GET /allPosts", () => {
   it("should return all posts", async () => {
     const res = await request(app).get("/allPosts");
