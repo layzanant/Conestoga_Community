@@ -1,5 +1,6 @@
 var express = require("express");
 const path = require("path");
+require("dotenv").config();
 let myApp = express();
 const session = require("express-session");
 const { check, validationResult } = require("express-validator");
@@ -20,7 +21,7 @@ myApp.set("view engine", "ejs");
 const mongoose = require("mongoose");
 const { create } = require("domain");
 
-mongoose.connect("mongodb://0.0.0.0:27017/ConestogaCommunity", {
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -120,14 +121,42 @@ myApp.get("/signIn", async (req, res) => {
 });
 
 const posts = [
-  { username: 'User1', title: '2023-07-19', description: 'This is the first post!' },
-  { username: 'User2', title: '2023-07-18', description: 'Just posted another update.' },
-  { username: 'User3', title: '2023-07-19', description: 'This is the first post!' },
-  { username: 'User4', title: '2023-07-18', description: 'Just posted another update.' },
-  { username: 'User5', title: '2023-07-19', description: 'This is the first post!' },
-  { username: 'User6', date: '2023-07-18', content: 'Just posted another update.' },
-  { author: 'User7', date: '2023-07-19', content: 'This is the first post!' },
-  { author: 'User8', date: '2023-07-18', content: 'Just posted another update.' },
+  {
+    username: "User1",
+    title: "2023-07-19",
+    description: "This is the first post!",
+  },
+  {
+    username: "User2",
+    title: "2023-07-18",
+    description: "Just posted another update.",
+  },
+  {
+    username: "User3",
+    title: "2023-07-19",
+    description: "This is the first post!",
+  },
+  {
+    username: "User4",
+    title: "2023-07-18",
+    description: "Just posted another update.",
+  },
+  {
+    username: "User5",
+    title: "2023-07-19",
+    description: "This is the first post!",
+  },
+  {
+    username: "User6",
+    date: "2023-07-18",
+    content: "Just posted another update.",
+  },
+  { author: "User7", date: "2023-07-19", content: "This is the first post!" },
+  {
+    author: "User8",
+    date: "2023-07-18",
+    content: "Just posted another update.",
+  },
   // Add more posts here
 ];
 myApp.get("/newPost", (req, res) => {
@@ -149,7 +178,11 @@ myApp.get("/adminHomePage", (req, res) => {
 
   const paginatedPosts = posts.slice(startIndex, endIndex);
 
-  res.render('adminHomePage', { posts: paginatedPosts, totalPages, currentPage: page });
+  res.render("adminHomePage", {
+    posts: paginatedPosts,
+    totalPages,
+    currentPage: page,
+  });
 });
 myApp.get("/homePage", (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -161,7 +194,11 @@ myApp.get("/homePage", (req, res) => {
 
   const paginatedPosts = posts.slice(startIndex, endIndex);
 
-  res.render('homePage', { posts: paginatedPosts, totalPages, currentPage: page });
+  res.render("homePage", {
+    posts: paginatedPosts,
+    totalPages,
+    currentPage: page,
+  });
 });
 // CREATE A POST
 myApp.post("/createPost", async (req, res) => {
@@ -288,5 +325,5 @@ myApp.post("/resolveRequest", async (req, res) => {
   }
 });
 
-module.exports = myApp.listen(8000);
+module.exports = myApp.listen(process.env.PORT || 8000);
 console.log("Listening on localhost:8000");
