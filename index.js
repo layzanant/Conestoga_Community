@@ -9,6 +9,7 @@ const {
   GeneratePassword,
   ValidatePassword,
   GenerateSignature,
+  ValidateSignature,
 } = require("./utils");
 
 myApp.set("views", path.join(__dirname, "views"));
@@ -91,7 +92,7 @@ myApp.post("/signUp", async (req, res) => {
 });
 
 // SIGNIN
-myApp.get("/signIn", async (req, res) => {
+myApp.post("/signIn", async (req, res) => {
   try {
     const user = req.body;
     const existingUser = await User.findOne({ email: user.email });
@@ -110,9 +111,13 @@ myApp.get("/signIn", async (req, res) => {
           lastName: existingUser.lastName,
           email: existingUser.email,
           isAlumini: existingUser.isAlumini,
-          token,
         };
-        res.status(200).json(sendUserResponse);
+        res
+          .cookie("access_token", token, {
+            httpOnly: true,
+          })
+          .status(200)
+          .json(sendUserResponse);
       } else res.status(400).json({ message: "Wrong password!" });
     } else res.status(404).json({ message: "User not found!" });
   } catch (error) {
@@ -201,14 +206,10 @@ myApp.get("/homePage", (req, res) => {
   });
 });
 // CREATE A POST
-myApp.post("/createPost", async (req, res) => {
+myApp.post("/createPost", ValidateSignature, async (req, res) => {
   const post = req.body;
-  var token = req.headers.authorization.split(" ")[1];
-  const tokenObj = JSON.parse(
-    Buffer.from(token.split(".")[1], "base64").toString()
-  );
   try {
-    post.userId = tokenObj._id;
+    post.userId = req.userId;
     const createdPost = await new Post(post).save();
     res.status(200).json(createdPost);
   } catch (error) {
@@ -217,7 +218,7 @@ myApp.post("/createPost", async (req, res) => {
 });
 
 // READ ALL POSTS
-myApp.get("/allPosts", async (req, res) => {
+myApp.get("/allPosts", ValidateSignature, async (req, res) => {
   try {
     const allPosts = await Post.find({});
     res.status(200).json(allPosts);
@@ -227,13 +228,9 @@ myApp.get("/allPosts", async (req, res) => {
 });
 
 // READ POST BY USER ID
-myApp.get("/postsByUser", async (req, res) => {
+myApp.get("/postsByUser", ValidateSignature, async (req, res) => {
   try {
-    var token = req.headers.authorization.split(" ")[1];
-    const tokenObj = JSON.parse(
-      Buffer.from(token.split(".")[1], "base64").toString()
-    );
-    const postsByUserId = await Post.find({ userId: tokenObj._id });
+    const postsByUserId = await Post.find({ userId: req.userId });
     res.status(200).json(postsByUserId);
   } catch (error) {
     throw error;
@@ -241,13 +238,9 @@ myApp.get("/postsByUser", async (req, res) => {
 });
 
 // DELETE POST
-myApp.delete("/deletePost", async (req, res) => {
+myApp.delete("/deletePost", ValidateSignature, async (req, res) => {
   try {
     var postId = req.body.postId;
-    var token = req.headers.authorization.split(" ")[1];
-    const tokenObj = JSON.parse(
-      Buffer.from(token.split(".")[1], "base64").toString()
-    );
     await Post.deleteOne({ _id: postId });
   } catch (error) {
     throw error;
@@ -255,14 +248,10 @@ myApp.delete("/deletePost", async (req, res) => {
 });
 
 // CREATE COMMENT ON A POST
-myApp.post("/comment", async (req, res) => {
+myApp.post("/comment", ValidateSignature, async (req, res) => {
   const comment = req.body;
-  var token = req.headers.authorization.split(" ")[1];
-  const tokenObj = JSON.parse(
-    Buffer.from(token.split(".")[1], "base64").toString()
-  );
   try {
-    comment.userId = tokenObj._id;
+    comment.userId = req.userId;
     const createdComment = await new Post(post).save();
     res.status(200).json(createdComment);
   } catch (error) {
@@ -271,13 +260,9 @@ myApp.post("/comment", async (req, res) => {
 });
 
 // DELETE A COMMENT
-myApp.delete("/deleteComment", async (req, res) => {
+myApp.delete("/deleteComment", ValidateSignature, async (req, res) => {
   try {
     var commentId = req.body.commentId;
-    var token = req.headers.authorization.split(" ")[1];
-    const tokenObj = JSON.parse(
-      Buffer.from(token.split(".")[1], "base64").toString()
-    );
     await Comment.deleteOne({ _id: commentId });
   } catch (error) {
     throw error;
@@ -285,14 +270,10 @@ myApp.delete("/deleteComment", async (req, res) => {
 });
 
 // RAISE A HELP REQUEST
-myApp.post("/raiseHelpRequest", async (req, res) => {
+myApp.post("/raiseHelpRequest", ValidateSignature, async (req, res) => {
   const help = req.body;
-  var token = req.headers.authorization.split(" ")[1];
-  const tokenObj = JSON.parse(
-    Buffer.from(token.split(".")[1], "base64").toString()
-  );
   try {
-    help.userId = tokenObj._id;
+    help.userId = req.userId;
     help.isResolved = false;
     const raisedRequest = await new HelpRequest(help).save();
     res.status(200).json(raisedRequest);
@@ -302,7 +283,7 @@ myApp.post("/raiseHelpRequest", async (req, res) => {
 });
 
 // READ ALL HELP REQUESTS
-myApp.get("/allHelpRequests", async (req, res) => {
+myApp.get("/allHelpRequests", ValidateSignature, async (req, res) => {
   try {
     const allHelpRequests = await HelpRequest.find({});
     res.status(200).json(allHelpRequests);
@@ -312,7 +293,7 @@ myApp.get("/allHelpRequests", async (req, res) => {
 });
 
 // RESOLVE A HELP REQUEST
-myApp.post("/resolveRequest", async (req, res) => {
+myApp.post("/resolveRequest", ValidateSignature, async (req, res) => {
   try {
     var req = req.body;
     const updatedRequest = HelpRequest.update(

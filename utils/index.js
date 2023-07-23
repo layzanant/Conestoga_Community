@@ -21,16 +21,16 @@ module.exports.ValidatePassword = async (
     expiresIn: expireIn,
   });
 }),
-  (module.exports.ValidateSignature = async (req) => {
-    const signature = req.get("Authorization");
-    if (signature) {
-      const payload = await jwt.verify(
-        signature.split(" ")[1],
-        "conestoga_community"
-      );
-      req.user = payload;
-      return true;
+  (module.exports.ValidateSignature = async (req, res, next) => {
+    const token = req.cookies.access_token;
+    if (!token) {
+      return res.sendStatus(403);
     }
-
-    return false;
+    try {
+      const data = await jwt.verify(token, "conestoga_community");
+      req.userId = data;
+      return next();
+    } catch {
+      return res.sendStatus(403);
+    }
   });
