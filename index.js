@@ -234,6 +234,8 @@ myApp.post("/changeFilterAdminPage", async (req, res) => {
 }
 }else res.sendStatus(403);
 });
+
+//Read all the posts for normal user (Non Admin)
 myApp.get("/homePage", async (req, res) => {
   const data = ValidateSignature(req);
   if(data&&data._id){
