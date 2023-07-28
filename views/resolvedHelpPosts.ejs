@@ -1,8 +1,8 @@
 <%- include('shared/header.ejs')%> <%- include('shared/adminNavigation.ejs')%>
 
-<main class="p-3 m-0 border-0 bd-example m-0 border-0" style="width: 1100px">
-  <div class="accomodationFilter" style="width: 180px">
-    <form action="changeFilterAdminPage" method="post">
+<main>
+  <div class="accomodationFilter">
+    <form action="changeFilter" method="post">
       <label for="category">Category:</label>
       <select id="category" name="category" required>
         <option value="jobs">Full-Time Jobs</option>
@@ -12,40 +12,44 @@
         <option value="mentalHealth">Mental Health</option>
         <option value="part-time-jobs">Part-Time Jobs</option>
       </select>
-      <button type="submit" style="margin-top: 10px; width: 170px">
-        Apply category Filter
-      </button>
+      <button type="submit">Filter</button>
     </form>
   </div>
-  <div class="container" style="width: 65%">
-    <h2>List of Posts</h2>
+  <div class="container">
+    <h2>List of Get Help Posts</h2>
     <ul class="list-group">
-      <% allPosts.forEach(post => { %>
+      <% resolvedHelpRequests.forEach(post => { %>
       <li class="list-group-item">
-        <p>Posted By <%= post.userId %></p>
-        <p>Title : <%= post.title %></p>
-
+        <div>
+          <span>Posted By <%= post.userId %></span>
+          <span>Title : <%= post.title %></span>
+        </div>
         <p>Description : <%= post.description %></p>
-        <p>Category : <%= post.category %></p>
+        <span>Category : <%= post.category %></span>
       </li>
       <% }) %>
     </ul>
-
-    <nav>
+    <nav aria-label="Page navigation">
       <ul class="pagination mt-4 justify-content-center">
-        <% if (page > 1) { %>
+        <% if (currentPage > 1) { %>
         <li class="page-item">
-          <a class="page-link" href="/adminHomePage?page=<%= page - 1 %>"
+          <a
+            class="page-link"
+            href="/resolvedHelpPosts?page=<%= currentPage - 1 %>"
             >&laquo;</a
           >
         </li>
         <% } %> <% for (let i = 1; i <= totalPages; i++) { %>
-        <li class="page-item <%= i === page ? 'active' : '' %>">
-          <a class="page-link" href="/adminHomePage?page=<%= i %>"><%= i %></a>
+        <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+          <a class="page-link" href="/resolvedHelpPosts?page=<%= i %>"
+            ><%= i %></a
+          >
         </li>
-        <% } %> <% if (page < totalPages) { %>
+        <% } %> <% if (currentPage < totalPages) { %>
         <li class="page-item">
-          <a class="page-link" href="/adminHomePage?page=<%= page + 1 %>"
+          <a
+            class="page-link"
+            href="/resolvedHelpPosts?page=<%= currentPage + 1 %>"
             >&raquo;</a
           >
         </li>

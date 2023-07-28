@@ -1,0 +1,55 @@
+<%- include('shared/header.ejs')%><%- include('shared/commonNavigation.ejs')%>
+<body>
+  <div class="accomodationFilter">
+    <form action="changeFilter" method="post">
+        <label for="category">Category:</label>
+        <select id="category" name="category" required>
+          <option value="jobs">Full-Time Jobs</option>
+          <option value="academics">Academics</option>
+          <option value="accommodation">Accommodation</option>
+          <option value="SocialEvents">Social Events</option>
+          <option value="mentalHealth">Mental Health</option>
+          <option value="part-time-jobs">Part-Time Jobs</option>
+        </select>
+        <button type="submit">Filter</button>
+      </form>
+  </div>
+  <div class="container">
+    <h2>List of Posts</h2>
+    <ul class="list-group">
+      <% postsByUserId.forEach(post => { %>
+      <li class="list-group-item">
+        <h4><%= post.username %></h4>
+        <p><%= post.title %></p>
+        <span><%= post.description %></span>
+      </li>
+      <% }) %>
+    </ul>
+
+    
+    <nav>
+      <ul class="pagination mt-4 justify-content-center">
+        <% if (page > 1) { %>
+        <li class="page-item">
+          <a class="page-link" href="/postsByUser?page=<%= page - 1 %>"
+            >&laquo;</a
+          >
+        </li>
+        <% } %> <% for (let i = 1; i <= totalPages; i++) { %>
+        <li class="page-item <%= i === page ? 'active' : '' %>">
+          <a class="page-link" href="/postByUser?page=<%= i %>"><%= i %></a>
+        </li>
+        <% } %> <% if (page < totalPages) { %>
+        <li class="page-item">
+          <a class="page-link" href="/postByUser?page=<%= page + 1 %>"
+            >&raquo;</a
+          >
+        </li>
+        <% } %>
+      </ul>
+    </nav>
+  </div>
+</main>
+<%- include('shared/footer.ejs')%>
+
+</body>
