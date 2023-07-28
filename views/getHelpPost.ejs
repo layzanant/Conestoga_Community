@@ -1,8 +1,8 @@
 <%- include('shared/header.ejs')%> <%- include('shared/adminNavigation.ejs')%>
 
-<main class="p-3 m-0 border-0 bd-example m-0 border-0" style="width: 1100px">
+<main style="width: 1100px">
   <div class="accomodationFilter" style="width: 180px">
-    <form action="changeFilterAdminPage" method="post">
+    <form action="changeFilter" method="post">
       <label for="category">Category:</label>
       <select id="category" name="category" required>
         <option value="jobs">Full-Time Jobs</option>
@@ -18,7 +18,7 @@
     </form>
   </div>
   <div class="container" style="width: 65%">
-    <h2>List of Posts</h2>
+    <h2>List of Get Help Posts</h2>
     <ul class="list-group">
       <% allPosts.forEach(post => { %>
       <li class="list-group-item">
@@ -30,22 +30,21 @@
       </li>
       <% }) %>
     </ul>
-
     <nav>
       <ul class="pagination mt-4 justify-content-center">
         <% if (page > 1) { %>
         <li class="page-item">
-          <a class="page-link" href="/adminHomePage?page=<%= page - 1 %>"
+          <a class="page-link" href="/getHelpPost?page=<%= page - 1 %>"
             >&laquo;</a
           >
         </li>
         <% } %> <% for (let i = 1; i <= totalPages; i++) { %>
         <li class="page-item <%= i === page ? 'active' : '' %>">
-          <a class="page-link" href="/adminHomePage?page=<%= i %>"><%= i %></a>
+          <a class="page-link" href="/getHelpPost?page=<%= i %>"><%= i %></a>
         </li>
         <% } %> <% if (page < totalPages) { %>
         <li class="page-item">
-          <a class="page-link" href="/adminHomePage?page=<%= page + 1 %>"
+          <a class="page-link" href="/getHelpPost?page=<%= page + 1 %>"
             >&raquo;</a
           >
         </li>

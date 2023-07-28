@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
   return await bcrypt.genSalt();
 }),
   (module.exports.GeneratePassword = async (password, salt) => {
+    console.log("await bcrypt.hash(password, salt) : " + await bcrypt.hash(password, salt));
     return await bcrypt.hash(password, salt);
   });
 
@@ -13,24 +14,14 @@ module.exports.ValidatePassword = async (
   savedPassword,
   salt
 ) => {
-  return (await this.GeneratePassword(enteredPassword, salt)) === savedPassword;
+  console.log(enteredPassword);
+  console.log("salt : "  + salt);
+  console.log("savedPassword : "  + savedPassword)
+  return (await this.GeneratePassword(enteredPassword, salt)) === (await this.GeneratePassword(savedPassword, salt));
 };
 
 (module.exports.GenerateSignature = async (payload, expireIn = "1d") => {
   return await jwt.sign(payload, "conestoga_community", {
     expiresIn: expireIn,
   });
-}),
-  (module.exports.ValidateSignature = async (req, res, next) => {
-    const token = req.cookies.access_token;
-    if (!token) {
-      return res.sendStatus(403);
-    }
-    try {
-      const data = await jwt.verify(token, "conestoga_community");
-      req.userId = data;
-      return next();
-    } catch {
-      return res.sendStatus(403);
-    }
-  });
+});
