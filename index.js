@@ -67,7 +67,7 @@ myApp.use(
   })
 );
 
-myApp.get("/", (req, res) => {
+myApp.post("/", (req, res) => {
   res.render("login");
 });
 
@@ -164,16 +164,16 @@ const posts = [
   },
   // Add more posts here
 ];
-myApp.get("/newPost", (req, res) => {
+myApp.post("/newPost", (req, res) => {
   res.render("newpost");
 });
-myApp.get("/newGetHelp", (req, res) => {
+myApp.post("/newGetHelp", (req, res) => {
   res.render("newGetHelp");
 });
-myApp.get("/updateProfile", (req, res) => {
+myApp.post("/updateProfile", (req, res) => {
   res.render("updateProfile");
 });
-myApp.get("/adminHomePage", (req, res) => {
+myApp.post("/adminHomePage", (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const postsPerPage = 2;
   const totalPosts = posts.length;
@@ -189,7 +189,7 @@ myApp.get("/adminHomePage", (req, res) => {
     currentPage: page,
   });
 });
-myApp.get("/homePage", (req, res) => {
+myApp.post("/homePage", (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const postsPerPage = 2;
   const totalPosts = posts.length;
@@ -218,7 +218,7 @@ myApp.post("/createPost", ValidateSignature, async (req, res) => {
 });
 
 // READ ALL POSTS
-myApp.get("/allPosts", ValidateSignature, async (req, res) => {
+myApp.post("/allPosts", ValidateSignature, async (req, res) => {
   try {
     const allPosts = await Post.find({});
     res.status(200).json(allPosts);
@@ -228,7 +228,7 @@ myApp.get("/allPosts", ValidateSignature, async (req, res) => {
 });
 
 // READ POST BY USER ID
-myApp.get("/postsByUser", ValidateSignature, async (req, res) => {
+myApp.post("/postsByUser", ValidateSignature, async (req, res) => {
   try {
     const postsByUserId = await Post.find({ userId: req.userId });
     res.status(200).json(postsByUserId);
@@ -283,7 +283,7 @@ myApp.post("/raiseHelpRequest", ValidateSignature, async (req, res) => {
 });
 
 // READ ALL HELP REQUESTS
-myApp.get("/allHelpRequests", ValidateSignature, async (req, res) => {
+myApp.post("/allHelpRequests", ValidateSignature, async (req, res) => {
   try {
     const allHelpRequests = await HelpRequest.find({});
     res.status(200).json(allHelpRequests);
@@ -295,9 +295,9 @@ myApp.get("/allHelpRequests", ValidateSignature, async (req, res) => {
 // RESOLVE A HELP REQUEST
 myApp.post("/resolveRequest", ValidateSignature, async (req, res) => {
   try {
-    var req = req.body;
+    var reqBody = req.body;
     const updatedRequest = HelpRequest.update(
-      { _id: req.reqId },
+      { _id: reqBody.reqId },
       { $set: { resolutionComment: req.resolutionComment } }
     );
     res.status(200).json(updatedRequest);
@@ -306,5 +306,13 @@ myApp.post("/resolveRequest", ValidateSignature, async (req, res) => {
   }
 });
 
+myApp.post("/logout", async (req, res) => {
+  try {
+    res.clearCookie("access_token");
+    res.render("login");
+  } catch (error) {
+    throw error;
+  }
+});
 module.exports = myApp.listen(process.env.PORT || 8000);
 console.log("Listening on localhost:8000");
