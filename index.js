@@ -107,22 +107,7 @@ myApp.post("/signUp", async (req, res) => {
       user.salt = salt;
       user.isAdmin = false;
       const createdUser = await new User(user).save();
-      const page = parseInt(req.query.page) || 1;
-      const postsPerPage = 2;
-      const countTotalPosts = await Post.countDocuments({});
-      const totalPages = Math.ceil(countTotalPosts / postsPerPage);
-      const startIndex = (page - 1) * postsPerPage;
-      const endIndex = startIndex + postsPerPage;
-
-      const paginatedPosts = posts.slice(startIndex, endIndex);
-      const allPosts = await Post.find({});
-    
-      res
-      .cookie("access_token", token, {
-        httpOnly: true,
-      })
-      .status(200).render("homePage",
-      { allPosts, paginatedPosts, totalPages, currentPage: page });
+      res.status(200).render("login");
     }
     return res.status(400).json({ message: "User already exists !" });   
   } catch (error) {
@@ -345,6 +330,8 @@ myApp.get("/adminHomePage", async (req, res) => {
   if(data&&data._id){
     
   try {
+    const user = await User.findById(data._id);
+    if(user.isAdmin){
     const page = parseInt(req.query.page) || 1;
     const postsPerPage = 2;
     const countTotalPosts = await Post.countDocuments({});
@@ -353,6 +340,9 @@ myApp.get("/adminHomePage", async (req, res) => {
     const allPosts = await Post.find({}).skip(startIndex).limit(postsPerPage);
     res.status(200).render("adminHomePage",
     { allPosts,page , totalPages});
+    } else{
+      res.sendStatus(403);
+    }
      
   } catch (error) {
     throw error;

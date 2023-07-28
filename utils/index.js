@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
   return await bcrypt.genSalt();
 }),
   (module.exports.GeneratePassword = async (password, salt) => {
-    console.log("await bcrypt.hash(password, salt) : " + await bcrypt.hash(password, salt));
+    // console.log("await bcrypt.hash(password, salt) : " + await bcrypt.hash(password, salt));
     return await bcrypt.hash(password, salt);
   });
 
@@ -14,10 +14,10 @@ module.exports.ValidatePassword = async (
   savedPassword,
   salt
 ) => {
-  console.log(enteredPassword);
-  console.log("salt : "  + salt);
-  console.log("savedPassword : "  + savedPassword)
-  return (await this.GeneratePassword(enteredPassword, salt)) === (await this.GeneratePassword(savedPassword, salt));
+  // console.log(enteredPassword);
+  // console.log("salt : "  + salt);
+  // console.log("savedPassword : "  + savedPassword)
+  return (await this.GeneratePassword(enteredPassword, salt)) == savedPassword;
 };
 
 (module.exports.GenerateSignature = async (payload, expireIn = "1d") => {
