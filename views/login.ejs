@@ -36,6 +36,14 @@
             </select>
             <button type="submit">Sign Up</button>
           </form>
+          <div class="formdata">
+            <p id="formResult">
+              <% if(typeof(errors) != 'undefined') { for(error of errors){ %> <%=
+              error.msg %>
+              <br />
+              <%} } %>
+            </p>
+          </div>
         </div>
       </div>
     </main>

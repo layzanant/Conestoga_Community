@@ -111,7 +111,6 @@ function customPasswordValidation(value, { req }) {
   var regularExpression =
     /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/;
   var password = req.body.password;
-
   if (regularExpression.test(password) == false) {
     throw new Error(
       "Enter password with 6-16 characters and must have atleast 1 number and special character "
@@ -120,15 +119,33 @@ function customPasswordValidation(value, { req }) {
   console.log("Password : " + password);
   return true;
 }
+function customNameValidation(value, { req }) {
+  var regularExpression = /^[a-zA-Z]+$/;
+  var name = value;
+  if (regularExpression.test(name) == false) {
+    throw new Error(
+      "Enter name without number OR special character "
+    );
+  }
+ 
+  return true;
+}
 
 // SIGNUP
 myApp.post(
   "/signUp",
-  //  [
-  //   check('email', 'Please enter a valid email address.').isEmail(),
-  //   check('password').custom(customPasswordValidation),
-  // ],
+   [
+    check('email', 'Please enter a valid email address.').isEmail(),
+    check('password').custom(customPasswordValidation),
+    check('firstName').custom(customNameValidation),
+    check('lastName').custom(customNameValidation),
+  ],
   async (req, res) => {
+    const errors = validationResult(req);
+    if(!errors.isEmpty()){
+        var errorData = errors.array();
+        res.render('login', {errors: errorData});
+    }else{
     try {
       const user = req.body;
       const userExists = await User.findOne({ email: user.email });
@@ -144,6 +161,7 @@ myApp.post(
     } catch (error) {
       throw error;
     }
+  }
   }
 );
 

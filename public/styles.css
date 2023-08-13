@@ -189,3 +189,10 @@ Signup error
     border: 1px solid black !important;
     border-radius: 10px;
   }
+  
+#formResult{
+    color: red;
+    font-size: 20px;
+    text-align: center;
+
+}
