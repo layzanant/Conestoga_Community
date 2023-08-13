@@ -12,19 +12,18 @@
         <option value="mentalHealth">Mental Health</option>
         <option value="part-time-jobs">Part-Time Jobs</option>
       </select>
-      <button type="submit" style="margin-top: 10px; width: 170px">
-        Apply category Filter
+      <button type="submit" class="filter">
+        Filter
       </button>
     </form>
   </div>
   <div class="container" style="width: 65%">
-    <h2>List of Get Help Posts</h2>
+    <h2>List of Help Posts</h2>
     <ul class="list-group">
       <% allPosts.forEach(post => { %>
       <li class="list-group-item">
-        <p>Posted By <%= post.userId %></p>
+        <p>Posted By <%= post.userName %></p>
         <p>Title : <%= post.title %></p>
-
         <p>Description : <%= post.description %></p>
         <p>Category : <%= post.category %></p>
       </li>
@@ -34,9 +33,7 @@
       <ul class="pagination mt-4 justify-content-center">
         <% if (page > 1) { %>
         <li class="page-item">
-          <a class="page-link" href="/getHelpPost?page=<%= page - 1 %>"
-            >&laquo;</a
-          >
+          <a class="page-link" href="/getHelpPost?page=<%= page - 1 %>">&laquo;</a>
         </li>
         <% } %> <% for (let i = 1; i <= totalPages; i++) { %>
         <li class="page-item <%= i === page ? 'active' : '' %>">
@@ -44,9 +41,7 @@
         </li>
         <% } %> <% if (page < totalPages) { %>
         <li class="page-item">
-          <a class="page-link" href="/getHelpPost?page=<%= page + 1 %>"
-            >&raquo;</a
-          >
+          <a class="page-link" href="/getHelpPost?page=<%= page + 1 %>">&raquo;</a>
         </li>
         <% } %>
       </ul>

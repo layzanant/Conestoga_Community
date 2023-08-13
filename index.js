@@ -1,7 +1,7 @@
 var express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
+//require("dotenv").config();
 let myApp = express();
 const session = require("express-session");
 const { check, validationResult } = require("express-validator");
@@ -11,7 +11,7 @@ const {
   ValidatePassword,
   GenerateSignature,
 } = require("./utils");
-
+const posts=[];
 myApp.set("views", path.join(__dirname, "views"));
 myApp.use(express.static(__dirname + "/public"));
 myApp.use(express.json());
@@ -23,13 +23,13 @@ const mongoose = require("mongoose");
 const { create } = require("domain");
 const { render } = require("ejs");
 
-mongoose.connect(process.env.MONGO_URI, {
-  //mongoose.connect("mongodb://0.0.0.0:27017/ConestogaCommunity", {
+//mongoose.connect(process.env.MONGO_URI, {
+mongoose.connect("mongodb://0.0.0.0:27017/ConestogaCommunity", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-const User = mongoose.model("User", {
+const User = mongoose.model("users", {
   firstName: String,
   lastName: String,
   email: String,
@@ -39,20 +39,30 @@ const User = mongoose.model("User", {
   salt: String,
 });
 
-const Post = mongoose.model("Post", {
+const Post = mongoose.model("posts", {
   title: String,
   category: String,
   description: String,
-  userId: String,
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref:"users"
+  },
+  comments:[{
+    type: mongoose.Schema.Types.ObjectId,
+    ref:"comments"
+  }],
 });
 
-const Comment = mongoose.model("Comment", {
+const Comment = mongoose.model("comments", {
   comment: String,
   postId: String,
-  userId: String,
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref:"users"
+  }
 });
 
-const HelpRequest = mongoose.model("HelpRequest", {
+const HelpRequest = mongoose.model("helprequests", {
   title: String,
   category: String,
   description: String,
@@ -85,7 +95,7 @@ myApp.use(
   })
 );
 
-myApp.post("/", (req, res) => {
+myApp.get("/", (req, res) => {
   res.render("login");
 });
 
@@ -95,8 +105,25 @@ myApp.use((req, res, next) => {
   next();
 });
 
+function customPasswordValidation(value, {req}){
+  var regularExpression = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/;
+  var password = req.body.password;
+
+  if (regularExpression.test(password) == false){
+    throw new Error("Enter password with 6-16 characters and must have atleast 1 number and special character ");
+  }
+  console.log("Password : " + password);
+  return true;
+
+}
+
 // SIGNUP
-myApp.post("/signUp", async (req, res) => {
+myApp.post("/signUp",
+//  [
+//   check('email', 'Please enter a valid email address.').isEmail(),
+//   check('password').custom(customPasswordValidation), 
+// ],
+ async (req, res) => {
   try {
     const user = req.body;
     const userExists = await User.findOne({ email: user.email });
@@ -109,7 +136,6 @@ myApp.post("/signUp", async (req, res) => {
       const createdUser = await new User(user).save();
       res.status(200).render("login");
     }
-    return res.status(400).json({ message: "User already exists !" });
   } catch (error) {
     throw error;
   }
@@ -142,16 +168,24 @@ myApp.post("/signIn", async (req, res) => {
           const countTotalPosts = await Post.countDocuments({});
           const totalPages = Math.ceil(countTotalPosts / postsPerPage);
           const startIndex = (page - 1) * postsPerPage;
-          const allPosts = await Post.find({})
+          var allPosts = await Post.find({})
             .skip(startIndex)
-            .limit(postsPerPage);
+            .limit(postsPerPage).populate("userId").populate({
+              path: "comments",
+              model: "comments",
+              populate:{
+                path:"userId",
+                model:"users",
+              },
+            });
+         
           res
             .cookie("access_token", token, {
               httpOnly: true,
             })
             .status(200)
             .render("adminHomePage", { allPosts, page, totalPages });
-          //.json(sendUserResponse);
+          
         } else {
           const page = parseInt(req.query.page) || 1;
           const postsPerPage = 2;
@@ -161,8 +195,16 @@ myApp.post("/signIn", async (req, res) => {
           const endIndex = startIndex + postsPerPage;
 
           const paginatedPosts = posts.slice(startIndex, endIndex);
-          const allPosts = await Post.find({});
-
+          var allPosts = await Post.find({}).skip(startIndex)
+          .limit(postsPerPage).populate("userId").populate({
+            path: "comments",
+            model: "comments",
+            populate:{
+              path:"userId",
+              model:"users",
+            },
+          });
+          
           res
             .cookie("access_token", token, {
               httpOnly: true,
@@ -174,7 +216,7 @@ myApp.post("/signIn", async (req, res) => {
               totalPages,
               currentPage: page,
             });
-          //.json(sendUserResponse);
+          
         }
       } else res.status(400).json({ message: "Wrong password!" });
     } else res.status(404).json({ message: "User not found!" });
@@ -186,14 +228,11 @@ myApp.post("/signIn", async (req, res) => {
 myApp.get("/newPost", (req, res) => {
   res.render("newpost");
 });
-myApp.post("/newGetHelp", (req, res) => {
+myApp.get("/newGetHelp", (req, res) => {
   res.render("newGetHelp");
 });
-myApp.post("/updateProfile", (req, res) => {
+myApp.get("/updateProfile", (req, res) => {
   res.render("updateProfile");
-});
-myApp.get("/getHelpPost", (req, res) => {
-  res.render("getHelpPost");
 });
 
 myApp.post("/changeFilter", async (req, res) => {
@@ -201,7 +240,14 @@ myApp.post("/changeFilter", async (req, res) => {
   if (data && data._id) {
     try {
       const jobFilter = req.body.category;
-      const allPosts = await Post.find({ category: jobFilter });
+      const allPosts = await Post.find({ category: jobFilter }).populate("userId").populate({
+        path: "comments",
+        model: "comments",
+        populate:{
+          path:"userId",
+          model:"users",
+        },
+      });;
       const page = parseInt(req.query.page) || 1;
       const postsPerPage = 2;
       const countTotalPosts = allPosts.length;
@@ -222,12 +268,21 @@ myApp.post("/changeFilter", async (req, res) => {
     }
   } else res.sendStatus(403);
 });
+
+
 myApp.post("/changeFilterAdminPage", async (req, res) => {
   const data = ValidateSignature(req);
   if (data && data._id) {
     try {
       const jobFilter = req.body.category;
-      const allPosts = await Post.find({ category: jobFilter });
+      const allPosts = await Post.find({ category: jobFilter }).populate("userId").populate({
+        path: "comments",
+        model: "comments",
+        populate:{
+          path:"userId",
+          model:"users",
+        },
+      });;
       const page = parseInt(req.query.page) || 1;
       const postsPerPage = 2;
       const countTotalPosts = allPosts.length;
@@ -236,6 +291,32 @@ myApp.post("/changeFilterAdminPage", async (req, res) => {
       const endIndex = startIndex + postsPerPage;
       const paginatedPosts = posts.slice(startIndex, endIndex);
       res.status(200).render("adminHomePage", { allPosts, page, totalPages });
+    } catch (error) {
+      throw error;
+    }
+  } else res.sendStatus(403);
+});
+myApp.post("/changeFilterForUserPosts", async (req, res) => {
+  const data = ValidateSignature(req);
+  if (data && data._id) {
+    try {
+      const jobFilter = req.body.category;
+      const postsByUserId = await Post.find({ category: jobFilter, userId: data._id }).populate("userId").populate({
+        path: "comments",
+        model: "comments",
+        populate:{
+          path:"userId",
+          model:"users",
+        },
+      });;
+      const page = parseInt(req.query.page) || 1;
+      const postsPerPage = 2;
+      const countTotalPosts = postsByUserId.length;
+      const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+      const startIndex = (page - 1) * postsPerPage;
+      const endIndex = startIndex + postsPerPage;
+      const paginatedPosts = posts.slice(startIndex, endIndex);
+      res.status(200).render("postsByUser", { postsByUserId, page, totalPages });
     } catch (error) {
       throw error;
     }
@@ -255,7 +336,15 @@ myApp.get("/homePage", async (req, res) => {
       const endIndex = startIndex + postsPerPage;
 
       const paginatedPosts = posts.slice(startIndex, endIndex);
-      const allPosts = await Post.find({});
+      var allPosts = await Post.find({}).skip(startIndex)
+      .limit(postsPerPage).populate("userId").populate({
+        path: "comments",
+        model: "comments",
+        populate:{
+          path:"userId",
+          model:"users",
+        },
+      });
       res
         .status(200)
         .render("homePage", {
@@ -264,7 +353,7 @@ myApp.get("/homePage", async (req, res) => {
           totalPages,
           currentPage: page,
         });
-      //res.status(200).json(allPosts);
+      
     } catch (error) {
       throw error;
     }
@@ -300,8 +389,6 @@ myApp.post("/updateProfile", async (req, res) => {
     const user = req.body;
     try {
       let salt = await GenerateSalt();
-      //let password = await GeneratePassword(user.password, salt);
-
       user.salt = salt;
 
       var userProfile = {
@@ -335,6 +422,16 @@ myApp.post("/updateProfile", async (req, res) => {
   } else res.sendStatus(403);
 });
 
+
+fetchUserName = (allPosts) => {
+  const posts = [];
+   allPosts.forEach( post => {
+    post.userName = "Anant jain";
+    posts.push(post);
+  });
+  
+  return posts;
+  };
 //completed
 // READ ALL POSTS FOR ADMIN
 myApp.get("/adminHomePage", async (req, res) => {
@@ -348,9 +445,19 @@ myApp.get("/adminHomePage", async (req, res) => {
         const countTotalPosts = await Post.countDocuments({});
         const totalPages = Math.ceil(countTotalPosts / postsPerPage);
         const startIndex = (page - 1) * postsPerPage;
-        const allPosts = await Post.find({})
+        
+        var allPosts = await Post.find()
           .skip(startIndex)
-          .limit(postsPerPage);
+          .limit(postsPerPage)
+          .populate("userId").populate({
+            path: "comments",
+            model: "comments",
+            populate:{
+              path:"userId",
+              model:"users",
+            },
+          });
+          
         res.status(200).render("adminHomePage", { allPosts, page, totalPages });
       } else {
         res.sendStatus(403);
@@ -368,11 +475,19 @@ myApp.get("/postsByUser", async (req, res) => {
   if (data && data._id) {
     try {
       const page = parseInt(req.query.page) || 1;
-      const postsPerPage = 2;
+      const postsPerPage = 5;
       const startIndex = (page - 1) * postsPerPage;
-      const postsByUserId = await Post.find({ userId: data._id })
+      var postsByUserId = await Post.find({ userId: data._id })
         .skip(startIndex)
-        .limit(postsPerPage);
+        .limit(postsPerPage).populate("userId").populate({
+          path: "comments",
+          model: "comments",
+          populate:{
+            path:"userId",
+            model:"users",
+          },
+        });
+      
       const countTotalPosts = postsByUserId.length;
       const totalPages = Math.ceil(countTotalPosts / postsPerPage);
       res
@@ -408,8 +523,9 @@ myApp.post("/comment", async (req, res) => {
       var postID = req.body.postId;
       comment.postId = postID;
       const createdComment = await new Comment(comment).save();
-      res.render("homePage");
-      res.status(200).json(createdComment);
+      const updatedPost = await Post.findOneAndUpdate({_id: postID}, {$push: {comments: createdComment._id}});
+      res.render("updateProfile");
+     
     } catch (error) {
       throw error;
     }
@@ -457,9 +573,17 @@ myApp.post("/raiseHelpRequest", async (req, res) => {
       const page = 1;
       const postsPerPage = 3;
       const startIndex = (page - 1) * postsPerPage;
-      const postsByUserId = await Post.find({ userId: data._id })
+      var postsByUserId = await Post.find({ userId: data._id })
         .skip(startIndex)
-        .limit(postsPerPage);
+        .limit(postsPerPage).populate("userId").populate({
+          path: "comments",
+          model: "comments",
+          populate:{
+            path:"userId",
+            model:"users",
+          },
+        });;
+        postsByUserId = fetchUserName(postsByUserId);
       const countTotalPosts = postsByUserId.length;
       const totalPages = Math.ceil(countTotalPosts / postsPerPage);
       res
@@ -471,20 +595,23 @@ myApp.post("/raiseHelpRequest", async (req, res) => {
   } else res.sendStatus(403);
 });
 
+
 //completed
 // READ ALL HELP REQUESTS FOR ADMIN
-myApp.get("/allHelpRequests", async (req, res) => {
+myApp.get("/getHelpPost", async (req, res) => {
+
   const data = ValidateSignature(req);
   if (data && data._id) {
     try {
-      const page = parseInt(req.query.page) || 1;
-      const postsPerPage = 3;
+      const page =  1;
+      const postsPerPage = 2;
       const countTotalPosts = await HelpRequest.countDocuments({});
       const totalPages = Math.ceil(countTotalPosts / postsPerPage);
       const startIndex = (page - 1) * postsPerPage;
-      const allPosts = await HelpRequest.find({})
+      var allPosts = await HelpRequest.find({})
         .skip(startIndex)
         .limit(postsPerPage);
+        allPosts = fetchUserName(allPosts);
       res.status(200).render("getHelpPost", { allPosts, page, totalPages });
     } catch (error) {
       throw error;
@@ -504,7 +631,8 @@ myApp.post("/resolveRequest", async (req, res) => {
       );
       const page = 1;
       const postsPerPage = 3;
-      const resolvedHelpRequests = await HelpRequest.find({ isResolved: true });
+      var resolvedHelpRequests = await HelpRequest.find({ isResolved: true });
+      resolvedHelpRequests = fetchUserName(resolvedHelpRequests);
       const countTotalPosts = resolvedHelpRequests.length;
       const totalPages = Math.ceil(countTotalPosts / postsPerPage);
       const startIndex = (page - 1) * postsPerPage;
@@ -527,18 +655,17 @@ myApp.post("/resolveRequest", async (req, res) => {
 });
 //completed
 // READ ALL RESOLVED HELP REQUESTS FOR ADMIN
-myApp.get("/resolvedHelpRequests", async (req, res) => {
+myApp.get("/resolvedHelpPosts", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const postsPerPage = 1;
-    const resolvedHelpRequests = await HelpRequest.find({ isResolved: true });
+    var resolvedHelpRequests = await HelpRequest.find({ isResolved: true });
     const countTotalPosts = resolvedHelpRequests.length;
     const totalPages = Math.ceil(countTotalPosts / postsPerPage);
     const startIndex = (page - 1) * postsPerPage;
     const endIndex = startIndex + postsPerPage;
-
     const paginatedPosts = posts.slice(startIndex, endIndex);
-
+    resolvedHelpRequests = fetchUserName(resolvedHelpRequests);
     res
       .status(200)
       .render("resolvedHelpPosts", {
@@ -553,13 +680,14 @@ myApp.get("/resolvedHelpRequests", async (req, res) => {
 });
 //Completed
 // READ ALL UNRESOLVED HELP REQUESTS FOR ADMIN
-myApp.get("/unresolvedHelpRequests", async (req, res) => {
+myApp.get("/unresolvedHelpPosts", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const postsPerPage = 2;
-    const unresolvedHelpRequests = await HelpRequest.find({
+    const postsPerPage = 1;
+    var unresolvedHelpRequests = await HelpRequest.find({
       isResolved: false,
     });
+    unresolvedHelpRequests = fetchUserName(unresolvedHelpRequests);
     const countTotalPosts = unresolvedHelpRequests.length;
     const totalPages = Math.ceil(countTotalPosts / postsPerPage);
     const startIndex = (page - 1) * postsPerPage;
@@ -578,7 +706,7 @@ myApp.get("/unresolvedHelpRequests", async (req, res) => {
   }
 });
 
-myApp.post("/logout", async (req, res) => {
+myApp.get("/logout", async (req, res) => {
   try {
     res.clearCookie("access_token");
     res.render("login");

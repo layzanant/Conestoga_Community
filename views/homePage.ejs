@@ -11,18 +11,23 @@
         <option value="mentalHealth">Mental Health</option>
         <option value="part-time-jobs">Part-Time Jobs</option>
       </select>
-      <button type="submit">Filter</button>
+      <button type="submit" class="filter">Filter</button>
     </form>
   </div>
   <div class="container">
     <h2>List of Posts</h2>
     <ul class="list-group">
       <% allPosts.forEach(post => { %>
-      <li class="list-group-item">
-        <h4><%= post.username %></h4>
-        <p><%= post.title %></p>
-        <span><%= post.description %></span>
-       
+      <li class="list-group-item posts">
+        <h3>User: <%= post.userId.firstName + " " + post.userId.lastName%></h3>
+        <h5>Title : <%= post.title %></h5>
+        <p>Category : <%= post.category %></p>
+        <p><%= post.description %></p>
+        <h4>Comments:</h4>  
+        <% post.comments.forEach(comment => { %>
+          <h5>User: <%= comment.userId.firstName + " " + comment.userId.lastName%></h5>
+          <p><%= comment.comment %></p>
+          <% }) %>
         <form action="comment" method="post">
           <input type="text" name="comment" />
           <input  style="display: none;" id="postId" name="postId" value=<%= post._id %>>

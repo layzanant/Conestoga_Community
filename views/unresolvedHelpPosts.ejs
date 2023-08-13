@@ -12,16 +12,16 @@
         <option value="mentalHealth">Mental Health</option>
         <option value="part-time-jobs">Part-Time Jobs</option>
       </select>
-      <button type="submit">Filter</button>
+      <button type="submit" class="filter">Filter</button>
     </form>
   </div>
   <div class="container">
-    <h2>List of Get Help Posts</h2>
+    <h2>List of UnResolved Posts</h2>
     <ul class="list-group">
       <% unresolvedHelpRequests.forEach(post => { %>
       <li class="list-group-item">
         <div>
-          <span>Posted By <%= post.userId %></span>
+          <span>Posted By <%= post.userName %></span>
           <span>Title : <%= post.title %></span>
         </div>
         <span>Description : <%= post.description %></span>
@@ -32,8 +32,7 @@
             id="title"
             type="text"
             style="display: none"
-            value="<%= post.title %>"
-          />
+            value="<%= post.title %>" />
 
           <input type="text" name="resolutionComment" id="resolutionComment" />
           <button class="resolve">Resolve</button>
@@ -47,23 +46,18 @@
         <li class="page-item">
           <a
             class="page-link"
-            href="/unresolvedHelpPosts?page=<%= currentPage - 1 %>"
-            >&laquo;</a
-          >
+            href="/unresolvedHelpPosts?page=<%= currentPage - 1 %>">&laquo;</a>
         </li>
         <% } %> <% for (let i = 1; i <= totalPages; i++) { %>
         <li class="page-item <%= i === currentPage ? 'active' : '' %>">
-          <a class="page-link" href="/unresolvedHelpPosts?page=<%= i %>"
-            ><%= i %></a
-          >
+          <a class="page-link" href="/unresolvedHelpPosts?page=<%= i %>"><%= i
+            %></a>
         </li>
         <% } %> <% if (currentPage < totalPages) { %>
         <li class="page-item">
           <a
             class="page-link"
-            href="/unresolvedHelpPosts?page=<%= currentPage + 1 %>"
-            >&raquo;</a
-          >
+            href="/unresolvedHelpPosts?page=<%= currentPage + 1 %>">&raquo;</a>
         </li>
         <% } %>
       </ul>
