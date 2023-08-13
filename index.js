@@ -116,141 +116,157 @@ function customPasswordValidation(value, { req }) {
       "Enter password with 6-16 characters and must have atleast 1 number and special character "
     );
   }
-  console.log("Password : " + password);
   return true;
 }
 function customNameValidation(value, { req }) {
   var regularExpression = /^[a-zA-Z]+$/;
   var name = value;
   if (regularExpression.test(name) == false) {
-    throw new Error(
-      "Enter name without number OR special character "
-    );
+    throw new Error("Enter name without number OR special character ");
   }
- 
+
   return true;
 }
 
 // SIGNUP
 myApp.post(
   "/signUp",
-   [
-    check('email', 'Please enter a valid email address.').isEmail(),
-    check('password').custom(customPasswordValidation),
-    check('firstName').custom(customNameValidation),
-    check('lastName').custom(customNameValidation),
+  [
+    check("email", "Please enter a valid email address.").isEmail(),
+    check("password").custom(customPasswordValidation),
+    check("firstName").custom(customNameValidation),
+    check("lastName").custom(customNameValidation),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if(!errors.isEmpty()){
-        var errorData = errors.array();
-        res.render('login', {errors: errorData});
-    }else{
-    try {
-      const user = req.body;
-      const userExists = await User.findOne({ email: user.email });
-      if (!userExists) {
-        let salt = await GenerateSalt();
-        let password = await GeneratePassword(user.password, salt);
-        user.password = password;
-        user.salt = salt;
-        user.isAdmin = false;
-        const createdUser = await new User(user).save();
-        res.status(200).render("login");
+    if (!errors.isEmpty()) {
+      var errorData = errors.array();
+      res.render("login", { errors: errorData });
+    } else {
+      try {
+        const user = req.body;
+        const userExists = await User.findOne({ email: user.email });
+        if (!userExists) {
+          let salt = await GenerateSalt();
+          let password = await GeneratePassword(user.password, salt);
+          user.password = password;
+          user.salt = salt;
+          user.isAdmin = false;
+          const createdUser = await new User(user).save();
+          res.status(200).render("login");
+        }
+      } catch (error) {
+        throw error;
       }
-    } catch (error) {
-      throw error;
     }
-  }
   }
 );
 
 // SIGNIN
-myApp.post("/signIn", async (req, res) => {
-  try {
-    const user = req.body;
-    const existingUser = await User.findOne({ email: user.email });
-    if (existingUser) {
-      const validPassword = await ValidatePassword(
-        user.password,
-        existingUser.password,
-        existingUser.salt
-      );
-      if (validPassword) {
-        const token = await GenerateSignature({
-          _id: existingUser._id,
-        });
-        const sendUserResponse = {
-          firstName: existingUser.firstName,
-          lastName: existingUser.lastName,
-          email: existingUser.email,
-          isAlumini: existingUser.isAlumini,
-        };
-        if (existingUser.isAdmin) {
-          const page = parseInt(req.query.page) || 1;
-          const postsPerPage = 2;
-          const countTotalPosts = await Post.countDocuments({});
-          const totalPages = Math.ceil(countTotalPosts / postsPerPage);
-          const startIndex = (page - 1) * postsPerPage;
-          var allPosts = await Post.find({})
-            .skip(startIndex)
-            .limit(postsPerPage)
-            .populate("userId")
-            .populate({
-              path: "comments",
-              model: "comments",
-              populate: {
-                path: "userId",
-                model: "users",
-              },
+myApp.post(
+  "/signIn",
+  [
+    check("email", "Please enter a valid email address.").isEmail(),
+    check("password").custom(customPasswordValidation),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      var errorData = errors.array();
+      res.render("login", { errors: errorData });
+    } else {
+      try {
+        const user = req.body;
+        const existingUser = await User.findOne({ email: user.email });
+        if (existingUser) {
+          const validPassword = await ValidatePassword(
+            user.password,
+            existingUser.password,
+            existingUser.salt
+          );
+          if (validPassword) {
+            const token = await GenerateSignature({
+              _id: existingUser._id,
             });
+            const sendUserResponse = {
+              firstName: existingUser.firstName,
+              lastName: existingUser.lastName,
+              email: existingUser.email,
+              isAlumini: existingUser.isAlumini,
+            };
+            if (existingUser.isAdmin) {
+              const page = parseInt(req.query.page) || 1;
+              const postsPerPage = 2;
+              const countTotalPosts = await Post.countDocuments({});
+              const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+              const startIndex = (page - 1) * postsPerPage;
+              var allPosts = await Post.find({})
+                .skip(startIndex)
+                .limit(postsPerPage)
+                .populate("userId")
+                .populate({
+                  path: "comments",
+                  model: "comments",
+                  populate: {
+                    path: "userId",
+                    model: "users",
+                  },
+                });
 
+              res
+                .cookie("access_token", token, {
+                  httpOnly: true,
+                })
+                .status(200)
+                .render("adminHomePage", { allPosts, page, totalPages });
+            } else {
+              const page = parseInt(req.query.page) || 1;
+              const postsPerPage = 2;
+              const countTotalPosts = await Post.countDocuments({});
+              const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+              const startIndex = (page - 1) * postsPerPage;
+              const endIndex = startIndex + postsPerPage;
+
+              const paginatedPosts = posts.slice(startIndex, endIndex);
+              var allPosts = await Post.find({})
+                .skip(startIndex)
+                .limit(postsPerPage)
+                .populate("userId")
+                .populate({
+                  path: "comments",
+                  model: "comments",
+                  populate: {
+                    path: "userId",
+                    model: "users",
+                  },
+                });
+
+              res
+                .cookie("access_token", token, {
+                  httpOnly: true,
+                })
+                .status(200)
+                .render("homePage", {
+                  allPosts,
+                  paginatedPosts,
+                  totalPages,
+                  currentPage: page,
+                });
+            }
+          } else
+            res
+              .status(400)
+              .render("login", { errors: [{ msg: "Wrong password!" }] });
+        } else
           res
-            .cookie("access_token", token, {
-              httpOnly: true,
-            })
-            .status(200)
-            .render("adminHomePage", { allPosts, page, totalPages });
-        } else {
-          const page = parseInt(req.query.page) || 1;
-          const postsPerPage = 2;
-          const countTotalPosts = await Post.countDocuments({});
-          const totalPages = Math.ceil(countTotalPosts / postsPerPage);
-          const startIndex = (page - 1) * postsPerPage;
-          const endIndex = startIndex + postsPerPage;
-
-          const paginatedPosts = posts.slice(startIndex, endIndex);
-          var allPosts = await Post.find({})
-            .skip(startIndex)
-            .limit(postsPerPage)
-            .populate("userId")
-            .populate({
-              path: "comments",
-              model: "comments",
-              populate: {
-                path: "userId",
-                model: "users",
-              },
-            });
-
-          res
-            .cookie("access_token", token, {
-              httpOnly: true,
-            })
-            .status(200)
-            .render("homePage", {
-              allPosts,
-              paginatedPosts,
-              totalPages,
-              currentPage: page,
-            });
-        }
-      } else res.status(400).json({ message: "Wrong password!" });
-    } else res.status(404).json({ message: "User not found!" });
-  } catch (error) {
-    throw error;
+            .status(404)
+            .render("login", { errors: [{ msg: "User not found!" }] });
+      } catch (error) {
+        throw error;
+      }
+    }
   }
-});
+);
 
 myApp.get("/newPost", (req, res) => {
   res.render("newpost");

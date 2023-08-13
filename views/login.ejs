@@ -1,52 +1,43 @@
 <%- include('shared/loginHeader.ejs')%>
 
-  <body>
-    <main>
-      <div class="userDetails">
-        <div class="login-form">
-          <form action="signIn" method="post">
-            <h3>Login</h3>
-            <input type="email" placeholder="Email ID" name="email" required />
-            <input type="password" placeholder="Password" name="password" required />
-            <button type="submit">Sign In</button>
-          </form>
-        </div>
-        
-        <div class="signup-form">
-          <form action="signUp" method="post">
-            <h3>Sign Up</h3>
-            <input
-              type="text"
-              placeholder="First Name"
-              name="firstName"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Last Name"
-              name="lastName"
-              required
-            />
-            <input type="email" placeholder="Email ID" name="email" required />
-            <input type="password" placeholder="Password" name="password" required />
-            <label for="alumni">Are you an Alumni?</label>
-            <select id="isAlumini" name="isAlumini" required>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
-            <button type="submit">Sign Up</button>
-          </form>
-          <div class="formdata">
-            <p id="formResult">
-              <% if(typeof(errors) != 'undefined') { for(error of errors){ %> <%=
-              error.msg %>
-              <br />
-              <%} } %>
-            </p>
-          </div>
-        </div>
+<body>
+  <main>
+    <div class="userDetails">
+      <div class="login-form">
+        <form action="signIn" method="post">
+          <h3>Login</h3>
+          <input type="email" placeholder="Email ID" name="email" required />
+          <input type="password" placeholder="Password" name="password" required />
+          <button type="submit">Sign In</button>
+        </form>
       </div>
-    </main>
-  </body>
-  <%- include('shared/footer.ejs')%>
+
+      <div class="signup-form">
+        <form action="signUp" method="post">
+          <h3>Sign Up</h3>
+          <input type="text" placeholder="First Name" name="firstName" required maxlength="15" />
+          <input type="text" placeholder="Last Name" name="lastName" required maxlength="15" />
+          <input type="email" placeholder="Email ID" name="email" required />
+          <input type="password" placeholder="Password" name="password" required />
+          <label for="alumni">Are you an Alumni?</label>
+          <select id="isAlumini" name="isAlumini" required>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+          <button type="submit">Sign Up</button>
+        </form>
+      </div>
+    </div>
+    <div class="formdata">
+      <p id="formResult">
+        <% if(typeof(errors) != 'undefined') { for(error of errors){ %> <%=
+          error.msg %>
+        <br />
+        <%} } %>
+      </p>
+    </div>
+  </main>
+</body>
+<%- include('shared/footer.ejs')%>
+
 </html>
