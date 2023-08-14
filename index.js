@@ -639,7 +639,32 @@ myApp.post(
             { _id: postID },
             { $push: { comments: createdComment._id } }
           );
-          res.render("updateProfile");
+          const page = parseInt(req.query.page) || 1;
+          const postsPerPage = 2;
+          const countTotalPosts = await Post.countDocuments({});
+          const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+          const startIndex = (page - 1) * postsPerPage;
+          const endIndex = startIndex + postsPerPage;
+
+          const paginatedPosts = posts.slice(startIndex, endIndex);
+          var allPosts = await Post.find({})
+            .skip(startIndex)
+            .limit(postsPerPage)
+            .populate("userId")
+            .populate({
+              path: "comments",
+              model: "comments",
+              populate: {
+                path: "userId",
+                model: "users",
+              },
+            });
+          res.status(200).render("homePage", {
+            allPosts,
+            paginatedPosts,
+            totalPages,
+            currentPage: page,
+          });
         } catch (error) {
           throw error;
         }
