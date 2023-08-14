@@ -14,14 +14,11 @@ module.exports.ValidatePassword = async (
   savedPassword,
   salt
 ) => {
-  // console.log(enteredPassword);
-  // console.log("salt : "  + salt);
-  // console.log("savedPassword : "  + savedPassword)
   return (await this.GeneratePassword(enteredPassword, salt)) == savedPassword;
 };
 
-(module.exports.GenerateSignature = async (payload, expireIn = "1d") => {
+module.exports.GenerateSignature = async (payload, expireIn = "1d") => {
   return await jwt.sign(payload, "conestoga_community", {
     expiresIn: expireIn,
   });
-});
+};
