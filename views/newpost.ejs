@@ -8,7 +8,7 @@
       <div class="message"><%= message %></div>
       <form action="createPost" method="post">
         <label for="title">Title:</label>
-        <input type="text" id="title" name="title" required />
+        <input type="text" id="title" name="title" required maxlength="50"/>
 
         <label for="category">Category:</label>
         <select id="category" name="category" required>
@@ -30,6 +30,14 @@
 
         <button type="submit">Submit</button>
       </form>
+      <div class="formdata">
+        <p id="formResult">
+          <% if(typeof(errors) != 'undefined') { for(error of errors){ %> <%=
+          error.msg %>
+          <br />
+          <%} } %>
+        </p>
+      </div>
     </div>
 
     <footer>

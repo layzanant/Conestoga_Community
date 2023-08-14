@@ -122,16 +122,18 @@ function customNameValidation(value, { req }) {
   var regularExpression = /^[a-zA-Z]+$/;
   var name = value;
   if (regularExpression.test(name) == false) {
-    throw new Error("Enter name without number OR special character ");
+    throw new Error(
+      "Enter name without number OR special character "
+    );
   }
-
+ 
   return true;
 }
 
 // SIGNUP
 myApp.post(
   "/signUp",
-  [
+   [
     check("email", "Please enter a valid email address.").isEmail(),
     check("password").custom(customPasswordValidation),
     check("firstName").custom(customNameValidation),
@@ -140,25 +142,25 @@ myApp.post(
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      var errorData = errors.array();
+        var errorData = errors.array();
       res.render("login", { errors: errorData });
     } else {
-      try {
-        const user = req.body;
-        const userExists = await User.findOne({ email: user.email });
-        if (!userExists) {
-          let salt = await GenerateSalt();
-          let password = await GeneratePassword(user.password, salt);
-          user.password = password;
-          user.salt = salt;
-          user.isAdmin = false;
-          const createdUser = await new User(user).save();
-          res.status(200).render("login");
-        }
-      } catch (error) {
-        throw error;
+    try {
+      const user = req.body;
+      const userExists = await User.findOne({ email: user.email });
+      if (!userExists) {
+        let salt = await GenerateSalt();
+        let password = await GeneratePassword(user.password, salt);
+        user.password = password;
+        user.salt = salt;
+        user.isAdmin = false;
+        const createdUser = await new User(user).save();
+        res.status(200).render("login");
       }
+    } catch (error) {
+      throw error;
     }
+  }
   }
 );
 
@@ -175,84 +177,84 @@ myApp.post(
       var errorData = errors.array();
       res.render("login", { errors: errorData });
     } else {
-      try {
-        const user = req.body;
-        const existingUser = await User.findOne({ email: user.email });
-        if (existingUser) {
-          const validPassword = await ValidatePassword(
-            user.password,
-            existingUser.password,
-            existingUser.salt
-          );
-          if (validPassword) {
-            const token = await GenerateSignature({
-              _id: existingUser._id,
+  try {
+    const user = req.body;
+    const existingUser = await User.findOne({ email: user.email });
+    if (existingUser) {
+      const validPassword = await ValidatePassword(
+        user.password,
+        existingUser.password,
+        existingUser.salt
+      );
+      if (validPassword) {
+        const token = await GenerateSignature({
+          _id: existingUser._id,
+        });
+        const sendUserResponse = {
+          firstName: existingUser.firstName,
+          lastName: existingUser.lastName,
+          email: existingUser.email,
+          isAlumini: existingUser.isAlumini,
+        };
+        if (existingUser.isAdmin) {
+          const page = parseInt(req.query.page) || 1;
+          const postsPerPage = 2;
+          const countTotalPosts = await Post.countDocuments({});
+          const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+          const startIndex = (page - 1) * postsPerPage;
+          var allPosts = await Post.find({})
+            .skip(startIndex)
+            .limit(postsPerPage)
+            .populate("userId")
+            .populate({
+              path: "comments",
+              model: "comments",
+              populate: {
+                path: "userId",
+                model: "users",
+              },
             });
-            const sendUserResponse = {
-              firstName: existingUser.firstName,
-              lastName: existingUser.lastName,
-              email: existingUser.email,
-              isAlumini: existingUser.isAlumini,
-            };
-            if (existingUser.isAdmin) {
-              const page = parseInt(req.query.page) || 1;
-              const postsPerPage = 2;
-              const countTotalPosts = await Post.countDocuments({});
-              const totalPages = Math.ceil(countTotalPosts / postsPerPage);
-              const startIndex = (page - 1) * postsPerPage;
-              var allPosts = await Post.find({})
-                .skip(startIndex)
-                .limit(postsPerPage)
-                .populate("userId")
-                .populate({
-                  path: "comments",
-                  model: "comments",
-                  populate: {
-                    path: "userId",
-                    model: "users",
-                  },
-                });
 
-              res
-                .cookie("access_token", token, {
-                  httpOnly: true,
-                })
-                .status(200)
-                .render("adminHomePage", { allPosts, page, totalPages });
-            } else {
-              const page = parseInt(req.query.page) || 1;
-              const postsPerPage = 2;
-              const countTotalPosts = await Post.countDocuments({});
-              const totalPages = Math.ceil(countTotalPosts / postsPerPage);
-              const startIndex = (page - 1) * postsPerPage;
-              const endIndex = startIndex + postsPerPage;
+          res
+            .cookie("access_token", token, {
+              httpOnly: true,
+            })
+            .status(200)
+            .render("adminHomePage", { allPosts, page, totalPages });
+        } else {
+          const page = parseInt(req.query.page) || 1;
+          const postsPerPage = 2;
+          const countTotalPosts = await Post.countDocuments({});
+          const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+          const startIndex = (page - 1) * postsPerPage;
+          const endIndex = startIndex + postsPerPage;
 
-              const paginatedPosts = posts.slice(startIndex, endIndex);
-              var allPosts = await Post.find({})
-                .skip(startIndex)
-                .limit(postsPerPage)
-                .populate("userId")
-                .populate({
-                  path: "comments",
-                  model: "comments",
-                  populate: {
-                    path: "userId",
-                    model: "users",
-                  },
-                });
+          const paginatedPosts = posts.slice(startIndex, endIndex);
+          var allPosts = await Post.find({})
+            .skip(startIndex)
+            .limit(postsPerPage)
+            .populate("userId")
+            .populate({
+              path: "comments",
+              model: "comments",
+              populate: {
+                path: "userId",
+                model: "users",
+              },
+            });
 
-              res
-                .cookie("access_token", token, {
-                  httpOnly: true,
-                })
-                .status(200)
-                .render("homePage", {
-                  allPosts,
-                  paginatedPosts,
-                  totalPages,
-                  currentPage: page,
-                });
-            }
+          res
+            .cookie("access_token", token, {
+              httpOnly: true,
+            })
+            .status(200)
+            .render("homePage", {
+              allPosts,
+              paginatedPosts,
+              totalPages,
+              currentPage: page,
+            });
+        }
           } else
             res
               .status(400)
@@ -261,9 +263,9 @@ myApp.post(
           res
             .status(404)
             .render("login", { errors: [{ msg: "User not found!" }] });
-      } catch (error) {
-        throw error;
-      }
+  } catch (error) {
+    throw error;
+  }
     }
   }
 );
@@ -411,8 +413,40 @@ myApp.get("/homePage", async (req, res) => {
   } else res.sendStatus(403);
 });
 
+function customTitleValidation(value, { req }) {
+  var regularExpression = /^[a-zA-Z0-9]+$/;
+  var title = value;
+  if (regularExpression.test(title) == false) {
+    throw new Error(
+      "Enter title without special character "
+    );
+  }
+ 
+  return true;
+}
+function customDescriptionValidation(value, { req }) {
+  var regularExpression = /^[a-zA-Z0-9]+$/;
+  var description = value;
+  if (regularExpression.test(description) == false) {
+    throw new Error(
+      "Enter description without special character "
+    );
+  }
+ 
+  return true;
+}
 // CREATE A POST
-myApp.post("/createPost", async (req, res) => {
+myApp.post("/createPost", 
+[
+  check('title').custom(customTitleValidation),
+  check('description').custom(customDescriptionValidation),  
+],
+async (req, res) => {
+  const errors = validationResult(req);
+  if(!errors.isEmpty()){
+      var errorData = errors.array();
+      res.render('newPost', {errors: errorData});
+  }else{
   const data = ValidateSignature(req);
   const post = req.body;
   if (data && data._id) {
@@ -431,6 +465,7 @@ myApp.post("/createPost", async (req, res) => {
       throw error;
     }
   } else res.sendStatus(403);
+}
 });
 
 // UPDATE USER PROFILE
@@ -552,22 +587,27 @@ myApp.get("/postsByUser", async (req, res) => {
   } else res.sendStatus(403);
 });
 
-// DELETE POST
-myApp.delete("/deletePost", async (req, res) => {
-  try {
-    var postId = req.body.postId;
-    var token = req.headers.authorization.split(" ")[1];
-    const tokenObj = JSON.parse(
-      Buffer.from(token.split(".")[1], "base64").toString()
+function customCommentValidation(value, { req }) {
+  var regularExpression = /^[a-zA-Z0-9]+$/;
+  var comment = value;
+  if (regularExpression.test(comment) == false) {
+    throw new Error(
+      "Enter comment without special character "
     );
-    await Post.deleteOne({ _id: postId });
-  } catch (error) {
-    throw error;
   }
-});
-
+  return true;
+}
 // CREATE COMMENT ON A POST
-myApp.post("/comment", async (req, res) => {
+myApp.post("/comment", 
+[
+  check('comment').custom(customCommentValidation),
+],
+async (req, res) => {
+  const errors = validationResult(req);
+  if(!errors.isEmpty()){
+      var errorData = errors.array();
+      res.render('newPost', {errors: errorData});
+  }else{
   const data = ValidateSignature(req);
   if (data && data._id) {
     const comment = req.body;
@@ -585,21 +625,10 @@ myApp.post("/comment", async (req, res) => {
       throw error;
     }
   } else res.sendStatus(403);
+}
 });
 
-// DELETE A COMMENT
-myApp.delete("/deleteComment", async (req, res) => {
-  try {
-    var commentId = req.body.commentId;
-    var token = req.headers.authorization.split(" ")[1];
-    const tokenObj = JSON.parse(
-      Buffer.from(token.split(".")[1], "base64").toString()
-    );
-    await Comment.deleteOne({ _id: commentId });
-  } catch (error) {
-    throw error;
-  }
-});
+
 
 //completed
 // RAISE A HELP REQUEST
