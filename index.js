@@ -436,7 +436,7 @@ myApp.get("/homePage", async (req, res) => {
 });
 
 function customTitleValidation(value, { req }) {
-  var regularExpression = /^[a-zA-Z0-9]+$/;
+  var regularExpression = /^[a-zA-Z0-9\s]+$/;
   var title = value;
   if (regularExpression.test(title) == false) {
     throw new Error(
@@ -447,7 +447,7 @@ function customTitleValidation(value, { req }) {
   return true;
 }
 function customDescriptionValidation(value, { req }) {
-  var regularExpression = /^[a-zA-Z0-9]+$/;
+  var regularExpression = /^[a-zA-Z0-9\s]+$/;
   var description = value;
   if (regularExpression.test(description) == false) {
     throw new Error(
@@ -677,7 +677,7 @@ myApp.post("/raiseHelpRequest", async (req, res) => {
       let newPost = new Post(post);
       newPost.save();
       const page = 1;
-      const postsPerPage = 3;
+      const postsPerPage = 6;
       const startIndex = (page - 1) * postsPerPage;
       var postsByUserId = await Post.find({ userId: data._id })
         .skip(startIndex)
