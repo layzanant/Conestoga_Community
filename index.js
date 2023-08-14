@@ -84,7 +84,9 @@ ValidateSignature = (req) => {
   });
   if (cookie_token != "") {
     const token = cookie_token.replace("access_token=", "");
+    console.log(token);
     const data = jwt.verify(token, "conestoga_community");
+    console.log(data);
     return data;
   } else return undefined;
 };
@@ -122,18 +124,16 @@ function customNameValidation(value, { req }) {
   var regularExpression = /^[a-zA-Z]+$/;
   var name = value;
   if (regularExpression.test(name) == false) {
-    throw new Error(
-      "Enter name without number OR special character "
-    );
+    throw new Error("Enter name without number OR special character ");
   }
- 
+
   return true;
 }
 
 // SIGNUP
 myApp.post(
   "/signUp",
-   [
+  [
     check("email", "Please enter a valid email address.").isEmail(),
     check("password").custom(customPasswordValidation),
     check("firstName").custom(customNameValidation),
@@ -142,25 +142,25 @@ myApp.post(
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        var errorData = errors.array();
+      var errorData = errors.array();
       res.render("login", { errors: errorData });
     } else {
-    try {
-      const user = req.body;
-      const userExists = await User.findOne({ email: user.email });
-      if (!userExists) {
-        let salt = await GenerateSalt();
-        let password = await GeneratePassword(user.password, salt);
-        user.password = password;
-        user.salt = salt;
-        user.isAdmin = false;
-        const createdUser = await new User(user).save();
-        res.status(200).render("login");
+      try {
+        const user = req.body;
+        const userExists = await User.findOne({ email: user.email });
+        if (!userExists) {
+          let salt = await GenerateSalt();
+          let password = await GeneratePassword(user.password, salt);
+          user.password = password;
+          user.salt = salt;
+          user.isAdmin = false;
+          const createdUser = await new User(user).save();
+          res.status(200).render("login");
+        }
+      } catch (error) {
+        throw error;
       }
-    } catch (error) {
-      throw error;
     }
-  }
   }
 );
 
@@ -177,84 +177,84 @@ myApp.post(
       var errorData = errors.array();
       res.render("login", { errors: errorData });
     } else {
-  try {
-    const user = req.body;
-    const existingUser = await User.findOne({ email: user.email });
-    if (existingUser) {
-      const validPassword = await ValidatePassword(
-        user.password,
-        existingUser.password,
-        existingUser.salt
-      );
-      if (validPassword) {
-        const token = await GenerateSignature({
-          _id: existingUser._id,
-        });
-        const sendUserResponse = {
-          firstName: existingUser.firstName,
-          lastName: existingUser.lastName,
-          email: existingUser.email,
-          isAlumini: existingUser.isAlumini,
-        };
-        if (existingUser.isAdmin) {
-          const page = parseInt(req.query.page) || 1;
-          const postsPerPage = 2;
-          const countTotalPosts = await Post.countDocuments({});
-          const totalPages = Math.ceil(countTotalPosts / postsPerPage);
-          const startIndex = (page - 1) * postsPerPage;
-          var allPosts = await Post.find({})
-            .skip(startIndex)
-            .limit(postsPerPage)
-            .populate("userId")
-            .populate({
-              path: "comments",
-              model: "comments",
-              populate: {
-                path: "userId",
-                model: "users",
-              },
+      try {
+        const user = req.body;
+        const existingUser = await User.findOne({ email: user.email });
+        if (existingUser) {
+          const validPassword = await ValidatePassword(
+            user.password,
+            existingUser.password,
+            existingUser.salt
+          );
+          if (validPassword) {
+            const token = await GenerateSignature({
+              _id: existingUser._id,
             });
+            const sendUserResponse = {
+              firstName: existingUser.firstName,
+              lastName: existingUser.lastName,
+              email: existingUser.email,
+              isAlumini: existingUser.isAlumini,
+            };
+            if (existingUser.isAdmin) {
+              const page = parseInt(req.query.page) || 1;
+              const postsPerPage = 2;
+              const countTotalPosts = await Post.countDocuments({});
+              const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+              const startIndex = (page - 1) * postsPerPage;
+              var allPosts = await Post.find({})
+                .skip(startIndex)
+                .limit(postsPerPage)
+                .populate("userId")
+                .populate({
+                  path: "comments",
+                  model: "comments",
+                  populate: {
+                    path: "userId",
+                    model: "users",
+                  },
+                });
 
-          res
-            .cookie("access_token", token, {
-              httpOnly: true,
-            })
-            .status(200)
-            .render("adminHomePage", { allPosts, page, totalPages });
-        } else {
-          const page = parseInt(req.query.page) || 1;
-          const postsPerPage = 2;
-          const countTotalPosts = await Post.countDocuments({});
-          const totalPages = Math.ceil(countTotalPosts / postsPerPage);
-          const startIndex = (page - 1) * postsPerPage;
-          const endIndex = startIndex + postsPerPage;
+              res
+                .cookie("access_token", token, {
+                  httpOnly: true,
+                })
+                .status(200)
+                .render("adminHomePage", { allPosts, page, totalPages });
+            } else {
+              const page = parseInt(req.query.page) || 1;
+              const postsPerPage = 2;
+              const countTotalPosts = await Post.countDocuments({});
+              const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+              const startIndex = (page - 1) * postsPerPage;
+              const endIndex = startIndex + postsPerPage;
 
-          const paginatedPosts = posts.slice(startIndex, endIndex);
-          var allPosts = await Post.find({})
-            .skip(startIndex)
-            .limit(postsPerPage)
-            .populate("userId")
-            .populate({
-              path: "comments",
-              model: "comments",
-              populate: {
-                path: "userId",
-                model: "users",
-              },
-            });
+              const paginatedPosts = posts.slice(startIndex, endIndex);
+              var allPosts = await Post.find({})
+                .skip(startIndex)
+                .limit(postsPerPage)
+                .populate("userId")
+                .populate({
+                  path: "comments",
+                  model: "comments",
+                  populate: {
+                    path: "userId",
+                    model: "users",
+                  },
+                });
 
-          res
-            .cookie("access_token", token, {
-              httpOnly: true,
-            })
-            .status(200)
-            .render("homePage", {
-              allPosts,
-              paginatedPosts,
-              totalPages,
-              currentPage: page,
-            });
-        }
+              res
+                .cookie("access_token", token, {
+                  httpOnly: true,
+                })
+                .status(200)
+                .render("homePage", {
+                  allPosts,
+                  paginatedPosts,
+                  totalPages,
+                  currentPage: page,
+                });
+            }
           } else
             res
               .status(400)
@@ -263,9 +263,9 @@ myApp.post(
           res
             .status(404)
             .render("login", { errors: [{ msg: "User not found!" }] });
-  } catch (error) {
-    throw error;
-  }
+      } catch (error) {
+        throw error;
+      }
     }
   }
 );
@@ -348,9 +348,10 @@ myApp.post("/changeFilterGetPosts", async (req, res) => {
   if (data && data._id) {
     try {
       const jobFilter = req.body.category;
-      const allPosts = await HelpRequest.find({ category: jobFilter })
-        .populate("userId");
-        
+      const allPosts = await HelpRequest.find({ category: jobFilter }).populate(
+        "userId"
+      );
+
       const page = parseInt(req.query.page) || 1;
       const postsPerPage = 2;
       const countTotalPosts = allPosts.length;
@@ -439,56 +440,54 @@ function customTitleValidation(value, { req }) {
   var regularExpression = /^[a-zA-Z0-9\s]+$/;
   var title = value;
   if (regularExpression.test(title) == false) {
-    throw new Error(
-      "Enter title without special character "
-    );
+    throw new Error("Enter title without special character ");
   }
- 
+
   return true;
 }
 function customDescriptionValidation(value, { req }) {
   var regularExpression = /^[a-zA-Z0-9\s]+$/;
   var description = value;
   if (regularExpression.test(description) == false) {
-    throw new Error(
-      "Enter description without special character "
-    );
+    throw new Error("Enter description without special character ");
   }
- 
+
   return true;
 }
 // CREATE A POST
-myApp.post("/createPost", 
-[
-  check('title').custom(customTitleValidation),
-  check('description').custom(customDescriptionValidation),  
-],
-async (req, res) => {
-  const errors = validationResult(req);
-  if(!errors.isEmpty()){
+myApp.post(
+  "/createPost",
+  [
+    check("title").custom(customTitleValidation),
+    check("description").custom(customDescriptionValidation),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       var errorData = errors.array();
-      res.render('newPost', {errors: errorData});
-  }else{
-  const data = ValidateSignature(req);
-  const post = req.body;
-  if (data && data._id) {
-    try {
-      post.userId = data._id;
-      var pagedata = {
-        title: req.body.title,
-        category: req.body.category,
-        description: req.body.description,
-        userId: data._id,
-      };
-      let newOrder = new Post(pagedata);
-      newOrder.save();
-      res.render("newPost");
-    } catch (error) {
-      throw error;
+      res.render("newPost", { errors: errorData });
+    } else {
+      const data = ValidateSignature(req);
+      const post = req.body;
+      if (data && data._id) {
+        try {
+          post.userId = data._id;
+          var pagedata = {
+            title: req.body.title,
+            category: req.body.category,
+            description: req.body.description,
+            userId: data._id,
+          };
+          let newOrder = new Post(pagedata);
+          newOrder.save();
+          res.render("newPost");
+        } catch (error) {
+          throw error;
+        }
+      } else res.sendStatus(403);
     }
-  } else res.sendStatus(403);
-}
-});
+  }
+);
 
 // UPDATE USER PROFILE
 myApp.post("/updateProfile", async (req, res) => {
@@ -613,44 +612,40 @@ function customCommentValidation(value, { req }) {
   var regularExpression = /^[a-zA-Z0-9]+$/;
   var comment = value;
   if (regularExpression.test(comment) == false) {
-    throw new Error(
-      "Enter comment without special character "
-    );
+    throw new Error("Enter comment without special character ");
   }
   return true;
 }
 // CREATE COMMENT ON A POST
-myApp.post("/comment", 
-[
-  check('comment').custom(customCommentValidation),
-],
-async (req, res) => {
-  const errors = validationResult(req);
-  if(!errors.isEmpty()){
+myApp.post(
+  "/comment",
+  [check("comment").custom(customCommentValidation)],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       var errorData = errors.array();
-      res.render('newPost', {errors: errorData});
-  }else{
-  const data = ValidateSignature(req);
-  if (data && data._id) {
-    const comment = req.body;
-    try {
-      comment.userId = data._id;
-      var postID = req.body.postId;
-      comment.postId = postID;
-      const createdComment = await new Comment(comment).save();
-      const updatedPost = await Post.findOneAndUpdate(
-        { _id: postID },
-        { $push: { comments: createdComment._id } }
-      );
-      res.render("updateProfile");
-    } catch (error) {
-      throw error;
+      res.render("newPost", { errors: errorData });
+    } else {
+      const data = ValidateSignature(req);
+      if (data && data._id) {
+        const comment = req.body;
+        try {
+          comment.userId = data._id;
+          var postID = req.body.postId;
+          comment.postId = postID;
+          const createdComment = await new Comment(comment).save();
+          const updatedPost = await Post.findOneAndUpdate(
+            { _id: postID },
+            { $push: { comments: createdComment._id } }
+          );
+          res.render("updateProfile");
+        } catch (error) {
+          throw error;
+        }
+      } else res.sendStatus(403);
     }
-  } else res.sendStatus(403);
-}
-});
-
-
+  }
+);
 
 //completed
 // RAISE A HELP REQUEST
@@ -763,22 +758,24 @@ myApp.post("/changeFilterResolvedPosts", async (req, res) => {
   if (data && data._id) {
     try {
       const jobFilter = req.body.category;
-      var resolvedHelpRequests = await HelpRequest.find({ category: jobFilter,  isResolved: true})
-        .populate("userId");
+      var resolvedHelpRequests = await HelpRequest.find({
+        category: jobFilter,
+        isResolved: true,
+      }).populate("userId");
       const page = parseInt(req.query.page) || 1;
       const postsPerPage = 1;
       const countTotalPosts = resolvedHelpRequests.length;
-    const totalPages = Math.ceil(countTotalPosts / postsPerPage);
-    const startIndex = (page - 1) * postsPerPage;
-    const endIndex = startIndex + postsPerPage;
-    const paginatedPosts = posts.slice(startIndex, endIndex);
-    resolvedHelpRequests = fetchUserName(resolvedHelpRequests);
-    res.status(200).render("resolvedHelpPosts", {
-      resolvedHelpRequests,
-      paginatedPosts,
-      totalPages,
-      currentPage: page,
-    });
+      const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+      const startIndex = (page - 1) * postsPerPage;
+      const endIndex = startIndex + postsPerPage;
+      const paginatedPosts = posts.slice(startIndex, endIndex);
+      resolvedHelpRequests = fetchUserName(resolvedHelpRequests);
+      res.status(200).render("resolvedHelpPosts", {
+        resolvedHelpRequests,
+        paginatedPosts,
+        totalPages,
+        currentPage: page,
+      });
     } catch (error) {
       throw error;
     }
@@ -812,22 +809,24 @@ myApp.post("/changeFilterunresolved", async (req, res) => {
   if (data && data._id) {
     try {
       const jobFilter = req.body.category;
-      var unresolvedHelpRequests = await HelpRequest.find({ category: jobFilter,  isResolved: false})
-        .populate("userId");
+      var unresolvedHelpRequests = await HelpRequest.find({
+        category: jobFilter,
+        isResolved: false,
+      }).populate("userId");
       const page = parseInt(req.query.page) || 1;
       const postsPerPage = 1;
       const countTotalPosts = unresolvedHelpRequests.length;
-    const totalPages = Math.ceil(countTotalPosts / postsPerPage);
-    const startIndex = (page - 1) * postsPerPage;
-    const endIndex = startIndex + postsPerPage;
-    const paginatedPosts = posts.slice(startIndex, endIndex);
-    unresolvedHelpRequests = fetchUserName(unresolvedHelpRequests);
-    res.status(200).render("unresolvedHelpPosts", {
-      unresolvedHelpRequests,
-      paginatedPosts,
-      totalPages,
-      currentPage: page,
-    });
+      const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+      const startIndex = (page - 1) * postsPerPage;
+      const endIndex = startIndex + postsPerPage;
+      const paginatedPosts = posts.slice(startIndex, endIndex);
+      unresolvedHelpRequests = fetchUserName(unresolvedHelpRequests);
+      res.status(200).render("unresolvedHelpPosts", {
+        unresolvedHelpRequests,
+        paginatedPosts,
+        totalPages,
+        currentPage: page,
+      });
     } catch (error) {
       throw error;
     }
