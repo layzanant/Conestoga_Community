@@ -342,6 +342,28 @@ myApp.post("/changeFilterAdminPage", async (req, res) => {
     }
   } else res.sendStatus(403);
 });
+
+myApp.post("/changeFilterGetPosts", async (req, res) => {
+  const data = ValidateSignature(req);
+  if (data && data._id) {
+    try {
+      const jobFilter = req.body.category;
+      const allPosts = await HelpRequest.find({ category: jobFilter })
+        .populate("userId");
+        
+      const page = parseInt(req.query.page) || 1;
+      const postsPerPage = 2;
+      const countTotalPosts = allPosts.length;
+      const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+      const startIndex = (page - 1) * postsPerPage;
+      const endIndex = startIndex + postsPerPage;
+      const paginatedPosts = posts.slice(startIndex, endIndex);
+      res.status(200).render("getHelpPost", { allPosts, page, totalPages });
+    } catch (error) {
+      throw error;
+    }
+  } else res.sendStatus(403);
+});
 myApp.post("/changeFilterForUserPosts", async (req, res) => {
   const data = ValidateSignature(req);
   if (data && data._id) {
@@ -735,6 +757,33 @@ myApp.post("/resolveRequest", async (req, res) => {
     }
   } else res.sendStatus(403);
 });
+
+myApp.post("/changeFilterResolvedPosts", async (req, res) => {
+  const data = ValidateSignature(req);
+  if (data && data._id) {
+    try {
+      const jobFilter = req.body.category;
+      var resolvedHelpRequests = await HelpRequest.find({ category: jobFilter,  isResolved: true})
+        .populate("userId");
+      const page = parseInt(req.query.page) || 1;
+      const postsPerPage = 1;
+      const countTotalPosts = resolvedHelpRequests.length;
+    const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+    const startIndex = (page - 1) * postsPerPage;
+    const endIndex = startIndex + postsPerPage;
+    const paginatedPosts = posts.slice(startIndex, endIndex);
+    resolvedHelpRequests = fetchUserName(resolvedHelpRequests);
+    res.status(200).render("resolvedHelpPosts", {
+      resolvedHelpRequests,
+      paginatedPosts,
+      totalPages,
+      currentPage: page,
+    });
+    } catch (error) {
+      throw error;
+    }
+  } else res.sendStatus(403);
+});
 //completed
 // READ ALL RESOLVED HELP REQUESTS FOR ADMIN
 myApp.get("/resolvedHelpPosts", async (req, res) => {
@@ -758,6 +807,33 @@ myApp.get("/resolvedHelpPosts", async (req, res) => {
     throw error;
   }
 });
+myApp.post("/changeFilterunresolved", async (req, res) => {
+  const data = ValidateSignature(req);
+  if (data && data._id) {
+    try {
+      const jobFilter = req.body.category;
+      var unresolvedHelpRequests = await HelpRequest.find({ category: jobFilter,  isResolved: false})
+        .populate("userId");
+      const page = parseInt(req.query.page) || 1;
+      const postsPerPage = 1;
+      const countTotalPosts = unresolvedHelpRequests.length;
+    const totalPages = Math.ceil(countTotalPosts / postsPerPage);
+    const startIndex = (page - 1) * postsPerPage;
+    const endIndex = startIndex + postsPerPage;
+    const paginatedPosts = posts.slice(startIndex, endIndex);
+    unresolvedHelpRequests = fetchUserName(unresolvedHelpRequests);
+    res.status(200).render("unresolvedHelpPosts", {
+      unresolvedHelpRequests,
+      paginatedPosts,
+      totalPages,
+      currentPage: page,
+    });
+    } catch (error) {
+      throw error;
+    }
+  } else res.sendStatus(403);
+});
+
 //Completed
 // READ ALL UNRESOLVED HELP REQUESTS FOR ADMIN
 myApp.get("/unresolvedHelpPosts", async (req, res) => {
