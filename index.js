@@ -85,9 +85,10 @@ ValidateSignature = (req) => {
   if (cookie_token != "") {
     const token = cookie_token.replace("access_token=", "");
     console.log(token);
-    const data = jwt.verify(token, "conestoga_community");
-    console.log(data);
-    return data;
+    const new_token = token.split(".");
+    // const data = jwt.verify(token, "conestoga_community");
+    // console.log(data);
+    return JSON.parse(atob(new_token[1]));
   } else return undefined;
 };
 
